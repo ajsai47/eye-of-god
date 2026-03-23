@@ -1,0 +1,16 @@
+{
+  "name": "eye-of-god",
+  "owner": { "name": "AJ Green" },
+  "metadata": {
+    "description": "Cross-instance agent collaboration for Claude Code",
+    "homepage": "https://github.com/ajsai47/eye-of-god"
+  },
+  "plugins": [
+    {
+      "name": "eye-of-god",
+      "version": "0.1.0",
+      "source": "./plugin",
+      "description": "Peer discovery, messaging, channels, and shared task boards for Claude Code instances"
+    }
+  ]
+}

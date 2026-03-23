@@ -82,7 +82,22 @@ You're running 5 Claude Code sessions across different projects. Each one is sma
 
 ## Quick Start
 
-### 1. Install Eye of God
+### Option A: Plugin Install (Recommended)
+
+One command, zero configuration. The plugin handles Bun installation, dependency management, and broker lifecycle automatically.
+
+```
+/plugin marketplace add ajsai47/eye-of-god
+/plugin install eye-of-god
+```
+
+Restart Claude Code. On startup:
+1. SessionStart hook ensures Bun + dependencies are installed
+2. MCP server starts and auto-launches the broker if needed
+3. Peer registers and auto-joins `#general` channel
+4. 14 MCP tools are available immediately
+
+### Option B: Manual Install
 
 ```bash
 git clone https://github.com/ajsai47/eye-of-god.git
@@ -90,7 +105,7 @@ cd eye-of-god
 bun install
 ```
 
-### 2. Start the broker
+Start the broker:
 
 ```bash
 bun broker.ts &
@@ -98,7 +113,7 @@ bun broker.ts &
 
 The broker runs on `localhost:7899` with SQLite. Every new peer auto-joins the `#general` channel.
 
-### 3. Install claude-mem
+### Install claude-mem (Companion Plugin)
 
 In any Claude Code session:
 
@@ -109,13 +124,9 @@ In any Claude Code session:
 
 Restart Claude Code. Now every session automatically captures findings, decisions, and context — and injects relevant memories into future sessions.
 
-### 4. Use from any Claude Code session
+### Use from any Claude Code session
 
-Tell Claude to register and communicate via the broker API:
-
-```
-Register with the eye-of-god broker on localhost:7899, list peers, and send "hello" to any peer you find.
-```
+With the plugin installed, MCP tools are available directly — `list_peers`, `send_message`, `broadcast`, etc.
 
 Or use the broker API directly:
 
@@ -142,7 +153,7 @@ curl -s -X POST localhost:7899/poll-messages \
   -d '{"id":"abc12345"}'
 ```
 
-### 5. CLI
+### CLI
 
 ```bash
 bun cli.ts status            # broker health + peer count
@@ -305,16 +316,41 @@ Instance A:  "claim-task: 2"  →  works on it  →  "update-task: 2, done"
 
 ```
 eye-of-god/
-├── broker.ts          # Singleton HTTP daemon + SQLite (the core)
-├── cli.ts             # CLI for inspecting broker state
-├── collab.sh          # Shell helper for subagent participation
-├── test-e2e.sh        # End-to-end test suite (39 tests)
+├── .claude-plugin/
+│   └── marketplace.json   # Marketplace catalog
+├── plugin/                # Plugin distribution (assembled by build-plugin.sh)
+│   ├── .claude-plugin/
+│   │   ├── plugin.json    # Plugin metadata
+│   │   └── CLAUDE.md      # Plugin-level instructions
+│   ├── .mcp.json          # MCP server registration
+│   ├── hooks/hooks.json   # SessionStart hook
+│   ├── scripts/
+│   │   ├── smart-install.sh   # Bun + dependency installer
+│   │   └── ensure-broker.sh   # Broker lifecycle helper
+│   ├── broker.ts          # (copy of source)
+│   ├── server.ts          # (copy of source)
+│   ├── shared/            # (copy of source)
+│   └── package.json       # Plugin runtime deps
+├── build-plugin.sh        # Assembles plugin/ from source
+├── broker.ts              # Singleton HTTP daemon + SQLite (the core)
+├── server.ts              # MCP server
+├── cli.ts                 # CLI for inspecting broker state
+├── collab.sh              # Shell helper for subagent participation
+├── test-e2e.sh            # End-to-end test suite (39 tests)
 ├── shared/
-│   ├── types.ts       # TypeScript types for broker API
-│   └── summarize.ts   # Optional auto-summary generation
-├── server.ts          # MCP server (legacy — use broker API directly)
-├── CLAUDE.md          # Instructions for Claude Code
+│   ├── types.ts           # TypeScript types for broker API
+│   └── summarize.ts       # Optional auto-summary generation
+├── CLAUDE.md              # Instructions for Claude Code
 └── package.json
+```
+
+### Building the Plugin
+
+After modifying source files, sync changes into the plugin directory:
+
+```bash
+bun run build-plugin
+# or: bash build-plugin.sh
 ```
 
 ## The Stack

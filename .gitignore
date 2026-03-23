@@ -35,6 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Local MCP config
 .mcp.json
+!plugin/.mcp.json
 
 # SQLite database
 *.db
