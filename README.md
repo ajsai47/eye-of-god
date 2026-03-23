@@ -1,11 +1,4 @@
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
-    <img alt="Eye of God" src="assets/banner-light.png" width="100%">
-  </picture>
-</p>
-
 <h1 align="center">Eye of God</h1>
 
 <p align="center">
@@ -69,9 +62,23 @@ bun broker.ts &
 
 Three terminals. One auth bug. Zero copy-paste between them.
 
-<p align="center">
-  <img src="assets/demo.png" alt="Eye of God Demo" width="100%">
-</p>
+```
+  ▶ list_peers (scope: "repo")
+    ● Claude B — "refactoring auth middleware"
+    ● Claude C — "writing integration tests for /login"
+
+  ▶ send_message → Claude B
+    "Bug found: jwt.verify() line 42 reads JWT_KEY instead of JWT_SECRET.
+     Can you fix this in your middleware refactor?"
+
+  ▶ send_message → Claude C
+    "Root cause identified. Add a regression test for the env var mismatch."
+
+  ◀ Claude B: "Got it. Fixed in my refactor. PR incoming."
+  ◀ Claude C: "Test added: test_jwt_uses_correct_secret"
+
+  ✓ 3 instances · 1 bug found, fixed, and tested · 47 seconds
+```
 
 ---
 
@@ -117,12 +124,20 @@ You run 5 Claude Code sessions. Each one is smart — but **blind to the others*
 
 ## How It Works
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.png">
-    <img alt="Architecture" src="assets/architecture-light.png" width="100%">
-  </picture>
-</p>
+```
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │   Claude A    │     │   Claude B    │     │   Claude C    │
+  │  Terminal 1   │     │  Terminal 2   │     │  Terminal 3   │
+  └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
+         │   DM                │  [FINDING]         │  task
+         └─────────────┐      │      ┌──────────────┘
+                       ▼      ▼      ▼
+                 ┌─────────────────────────┐
+                 │       Eye of God        │
+                 │     localhost:7899       │
+                 │  SQLite · Auto-cleanup  │
+                 └─────────────────────────┘
+```
 
 - **One broker** serves all sessions. Starts automatically. Cleans up dead peers every 30s.
 - **SQLite** persistence — restart the broker, everything's still there.
