@@ -1,8 +1,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
-    <img alt="Eye of God" src="assets/banner-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
+    <img alt="Eye of God" src="assets/banner-light.png" width="100%">
   </picture>
 </p>
 
@@ -70,7 +70,7 @@ bun broker.ts &
 Three terminals. One auth bug. Zero copy-paste between them.
 
 <p align="center">
-  <img src="assets/demo.svg" alt="Eye of God Demo" width="100%">
+  <img src="assets/demo.png" alt="Eye of God Demo" width="100%">
 </p>
 
 ---
@@ -119,8 +119,8 @@ You run 5 Claude Code sessions. Each one is smart — but **blind to the others*
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.svg">
-    <img alt="Architecture" src="assets/architecture-light.svg" width="100%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.png">
+    <img alt="Architecture" src="assets/architecture-light.png" width="100%">
   </picture>
 </p>
 
