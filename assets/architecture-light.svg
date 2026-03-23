@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300" viewBox="0 0 800 300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="400" y1="0" x2="400" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f6f8fa"/>
+    </linearGradient>
+    <linearGradient id="line-flow-down" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#d97706" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#d97706" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="line-flow-up" x1="0" y1="1" x2="0" y2="0">
+      <stop stop-color="#6366f1" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="300" fill="url(#bg)"/>
+
+  <!-- Connection lines -->
+  <line x1="140" y1="90" x2="340" y2="190" stroke="url(#line-flow-down)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="340" y1="190" x2="140" y2="90" stroke="url(#line-flow-up)" stroke-width="1.5" stroke-dasharray="4 3" transform="translate(8, 0)"/>
+  <line x1="400" y1="90" x2="400" y2="180" stroke="url(#line-flow-down)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="408" y1="90" x2="408" y2="180" stroke="url(#line-flow-up)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="660" y1="90" x2="460" y2="190" stroke="url(#line-flow-down)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="460" y1="190" x2="660" y2="90" stroke="url(#line-flow-up)" stroke-width="1.5" stroke-dasharray="4 3" transform="translate(-8, 0)"/>
+
+  <!-- Terminal boxes -->
+  <g>
+    <rect x="60" y="30" width="160" height="60" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+    <circle cx="78" cy="46" r="3" fill="#d97706" opacity="0.7"/>
+    <text x="90" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2937">Claude A</text>
+    <text x="78" y="74" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#656d76">Terminal 1</text>
+
+    <rect x="320" y="30" width="160" height="60" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+    <circle cx="338" cy="46" r="3" fill="#d97706" opacity="0.7"/>
+    <text x="350" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2937">Claude B</text>
+    <text x="338" y="74" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#656d76">Terminal 2</text>
+
+    <rect x="580" y="30" width="160" height="60" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1"/>
+    <circle cx="598" cy="46" r="3" fill="#d97706" opacity="0.7"/>
+    <text x="610" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2937">Claude C</text>
+    <text x="598" y="74" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#656d76">Terminal 3</text>
+  </g>
+
+  <!-- Flow labels -->
+  <text x="220" y="148" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#d97706" opacity="0.7" transform="rotate(-30, 220, 148)">DM</text>
+  <text x="406" y="142" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#d97706" opacity="0.7">[FINDING]</text>
+  <text x="560" y="148" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#6366f1" opacity="0.7" transform="rotate(30, 560, 148)">task</text>
+
+  <!-- Broker box -->
+  <g>
+    <rect x="300" y="180" width="200" height="85" rx="10" fill="#ffffff" stroke="#d97706" stroke-width="1" opacity="0.9"/>
+    <rect x="300" y="180" width="200" height="85" rx="10" fill="#d97706" opacity="0.02"/>
+    <text x="400" y="208" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2937">Eye of God</text>
+    <text x="400" y="228" text-anchor="middle" font-family="SF Mono, Menlo, monospace" font-size="11" fill="#656d76">localhost:7899</text>
+    <text x="400" y="252" text-anchor="middle" font-family="SF Mono, Menlo, monospace" font-size="10" fill="#8b949e">SQLite · Auto-cleanup · Zero config</text>
+  </g>
+</svg>
