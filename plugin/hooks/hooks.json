@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT:-$(dirname $(dirname $(realpath $0)))}/scripts/smart-install.sh\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

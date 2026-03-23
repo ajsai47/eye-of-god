@@ -1,0 +1,12 @@
+{
+  "name": "eye-of-god-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

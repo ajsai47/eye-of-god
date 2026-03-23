@@ -1,0 +1,9 @@
+{
+  "name": "eye-of-god",
+  "version": "0.1.0",
+  "description": "Cross-instance agent collaboration for Claude Code",
+  "author": { "name": "AJ Green" },
+  "repository": "https://github.com/ajsai47/eye-of-god",
+  "license": "MIT",
+  "keywords": ["peers", "collaboration", "messaging", "channels", "tasks"]
+}
