@@ -1,18 +1,21 @@
 
 ```
-                               /\
-                              /  \
-                             /    \
-                            / ◉◉◉◉ \
-                           /  ◉  ◉  \
-                          /   ◉◉◉◉   \
-                         /              \
-                        /________________\
+                                 △
+                                ╱ ╲
+                               ╱   ╲
+                              ╱     ╲
+                             ╱  ┌─┐  ╲
+                            ╱  ┤◉ ├  ╲
+                           ╱    └─┘    ╲
+                          ╱─────────────╲
+                         ╱               ╲
+                        ╱                 ╲
+                       ╱___________________╲
 
-                  E  Y  E     O  F     G  O  D
+               E  Y  E    O  F    G  O  D
 
-        Your Claude Code instances can't see each other.
-                        Now they can.
+       Your Claude Code instances can't see each other.
+                       Now they can.
 ```
 
 <h1 align="center">Eye of God</h1>
