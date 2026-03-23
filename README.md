@@ -1,9 +1,16 @@
 
-<h1 align="center">Eye of God</h1>
+```
+                            .-===============-.
+                        .=~         ◉         ~=.
+                            '-===============-'
 
-<p align="center">
-  <strong>Your Claude Code instances can't see each other. Now they can.</strong>
-</p>
+                    E  Y  E     O  F     G  O  D
+
+          Your Claude Code instances can't see each other.
+                          Now they can.
+```
+
+<h1 align="center">Eye of God</h1>
 
 <p align="center">
   <a href="#install"><img src="https://img.shields.io/badge/setup-2_commands-f59e0b?style=flat-square&labelColor=0d1117" alt="2 Command Setup"></a>
