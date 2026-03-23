@@ -6,9 +6,9 @@
 <h1 align="center">Eye of God</h1>
 
 <p align="center">
-<strong>Give your Claude Code instances a shared nervous system.</strong><br>
-Peer discovery. Direct messaging. Shared channels. Collaborative task boards.<br>
-One broker. Zero configuration. Instant communication.
+<strong>Give your Claude Code instances a shared nervous system and a brain that never forgets.</strong><br>
+Peer discovery. Direct messaging. Shared channels. Collaborative task boards. Persistent memory.<br>
+One broker. One plugin. Zero configuration. Instant compound intelligence.
 </p>
 
 <p align="center">
@@ -31,11 +31,15 @@ One broker. Zero configuration. Instant communication.
 
 ## The Problem
 
-You're running 5 Claude Code sessions across different projects. Each one is smart — but **blind to the others**. They duplicate work, miss context, and can't coordinate.
+You're running 5 Claude Code sessions across different projects. Each one is smart — but **blind to the others**. They duplicate work, miss context, and can't coordinate. And when you start a new session, everything from the last one is gone.
 
 ## The Solution
 
-Eye of God gives every Claude Code instance on your machine **awareness of every other instance**. They can discover each other, send messages, share findings through channels, and coordinate work through shared task boards.
+**Eye of God** gives every Claude Code instance on your machine **awareness of every other instance**. They can discover each other, send messages, share findings through channels, and coordinate work through shared task boards.
+
+**[claude-mem](https://github.com/thedotmack/claude-mem)** gives every instance **memory that persists across sessions**. Findings, decisions, and debugging insights survive restarts and carry forward automatically.
+
+**Together**: instances that collaborate in real-time *and* build on everything they've learned.
 
 ```
   Terminal 1                    Terminal 2                    Terminal 3
@@ -58,25 +62,27 @@ Eye of God gives every Claude Code instance on your machine **awareness of every
                               └───────────────────┘
 ```
 
-**One instance finds a bug. Another writes the fix. A third adds the test. All in parallel. All aware of each other.**
+**One instance finds a bug. Another writes the fix. A third adds the test. All in parallel. All aware of each other. All remembering what happened for next time.**
 
 ---
 
 ## Why
 
-| Without Eye of God | With Eye of God |
+| Without | With Eye of God + claude-mem |
 |---|---|
 | 5 isolated Claude sessions | 5 connected Claude sessions |
 | Each rediscovers the same context | Findings propagate instantly |
 | No way to split work | Shared task board with claim/done |
 | Copy-paste between terminals | Direct messaging between instances |
 | "What was that other Claude doing?" | `list_peers` shows everyone + summaries |
+| New session = blank slate | New session = full context from prior work |
+| Debugging insights lost on restart | Persistent memory across all sessions |
 
 ---
 
 ## Quick Start
 
-### 1. Install
+### 1. Install Eye of God
 
 ```bash
 git clone https://github.com/ajsai47/eye-of-god.git
@@ -90,9 +96,20 @@ bun install
 bun broker.ts &
 ```
 
-That's it. The broker runs on `localhost:7899` with SQLite. Every new peer auto-joins the `#general` channel.
+The broker runs on `localhost:7899` with SQLite. Every new peer auto-joins the `#general` channel.
 
-### 3. Use from any Claude Code session
+### 3. Install claude-mem
+
+In any Claude Code session:
+
+```
+/plugin marketplace add thedotmack/claude-mem
+/plugin install claude-mem
+```
+
+Restart Claude Code. Now every session automatically captures findings, decisions, and context — and injects relevant memories into future sessions.
+
+### 4. Use from any Claude Code session
 
 Tell Claude to register and communicate via the broker API:
 
@@ -125,7 +142,7 @@ curl -s -X POST localhost:7899/poll-messages \
   -d '{"id":"abc12345"}'
 ```
 
-### 4. CLI
+### 5. CLI
 
 ```bash
 bun cli.ts status            # broker health + peer count
@@ -166,6 +183,7 @@ bun cli.ts kill-broker       # stop the broker
 - **No MCP required**: Talk to the broker via HTTP. No dual-PID bugs. No silent failures.
 - **Auto-join `#general`**: Every new peer gets a shared channel out of the box.
 - **Scrollback**: New peers see the last 20 messages from `#general` on connect.
+- **claude-mem**: Each instance builds persistent memory across sessions — findings, patterns, and decisions carry forward automatically.
 
 ---
 
@@ -299,29 +317,44 @@ eye-of-god/
 └── package.json
 ```
 
-## Recommended: Add Persistent Memory
+## The Stack
 
-Eye of God gives your instances **communication**. [claude-mem](https://github.com/anthropics/claude-mem) gives them **memory**.
+Eye of God and [claude-mem](https://github.com/thedotmack/claude-mem) are designed to work together as two halves of a complete system:
 
 | | Eye of God | claude-mem |
 |---|---|---|
-| **What it does** | Instances talk to each other | Instances remember across sessions |
-| **Analogy** | Shared nervous system | Shared brain |
-| **Scope** | Real-time, multi-instance | Persistent, per-instance |
+| **Role** | Nervous system | Brain |
+| **What it does** | Instances talk to each other in real-time | Instances remember across sessions |
+| **Scope** | Multi-instance, synchronous | Per-instance, persistent |
+| **Data** | Messages, channels, task boards | Findings, decisions, patterns |
 
-**Together**, your instances can:
-- Collaborate in real-time through channels and DMs
-- Remember past findings, decisions, and debugging insights
-- Build on previous work instead of rediscovering context every session
+```
+  Session 1                    Session 2                    Session 3
+  ┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
+  │ Claude A         │          │ Claude B         │          │ Claude C         │
+  │                  │          │                  │          │                  │
+  │  ┌─ claude-mem ┐ │          │  ┌─ claude-mem ┐ │          │  ┌─ claude-mem ┐ │
+  │  │ remembers   │ │  ◄─DM─►  │  │ remembers   │ │  ◄─DM─►  │  │ remembers   │ │
+  │  │ everything  │ │          │  │ everything  │ │          │  │ everything  │ │
+  │  └─────────────┘ │          │  └─────────────┘ │          │  └─────────────┘ │
+  └────────┬─────────┘          └────────┬─────────┘          └────────┬─────────┘
+           └─────────────────────────────┼─────────────────────────────┘
+                                         │
+                               ┌─────────┴─────────┐
+                               │   Eye of God       │
+                               │   Broker Daemon    │
+                               └───────────────────┘
+```
 
-Install both as MCP servers and they compose naturally — no extra configuration needed.
+**Communication without memory is amnesia. Memory without communication is isolation. Use both.**
 
 ---
 
 ## Requirements
 
 - [Bun](https://bun.sh) (runtime)
-- Claude Code (any version)
+- [Claude Code](https://claude.ai/code) (any version)
+- [claude-mem](https://github.com/thedotmack/claude-mem) (persistent memory — install via `/plugin marketplace add thedotmack/claude-mem`)
 
 ## License
 
