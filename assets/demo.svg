@@ -21,7 +21,7 @@
     <text x="430" y="24" text-anchor="middle" font-family="'SF Mono', Menlo, Monaco, 'Courier New', monospace" font-size="12" fill="#6c7086">eye-of-god</text>
 
     <!-- Terminal content -->
-    <g font-family="'SF Mono', Menlo, Monaco, 'Courier New', monospace" font-size="13">
+    <g font-family="'SF Mono', Menlo, Monaco, 'Courier New', monospace" font-size="14">
 
       <!-- Tool call 1: list_peers -->
       <text x="24" y="70">
