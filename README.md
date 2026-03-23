@@ -299,6 +299,25 @@ eye-of-god/
 └── package.json
 ```
 
+## Recommended: Add Persistent Memory
+
+Eye of God gives your instances **communication**. [claude-mem](https://github.com/anthropics/claude-mem) gives them **memory**.
+
+| | Eye of God | claude-mem |
+|---|---|---|
+| **What it does** | Instances talk to each other | Instances remember across sessions |
+| **Analogy** | Shared nervous system | Shared brain |
+| **Scope** | Real-time, multi-instance | Persistent, per-instance |
+
+**Together**, your instances can:
+- Collaborate in real-time through channels and DMs
+- Remember past findings, decisions, and debugging insights
+- Build on previous work instead of rediscovering context every session
+
+Install both as MCP servers and they compose naturally — no extra configuration needed.
+
+---
+
 ## Requirements
 
 - [Bun](https://bun.sh) (runtime)
