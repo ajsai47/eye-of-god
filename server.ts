@@ -570,6 +570,10 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       }
       try {
         const result = await brokerFetch<PollMessagesResponse>("/poll-messages", { id: myId });
+        // Clear from channelPushedIds since they're now consumed via poll
+        for (const msg of result.messages) {
+          channelPushedIds.delete(msg.id);
+        }
         if (result.messages.length === 0) {
           return {
             content: [{ type: "text" as const, text: "No new messages." }],
@@ -901,7 +905,9 @@ async function pollAndPushMessages() {
         channelPushedIds.add(msg.id);
         log(`Pushed message from ${msg.from_id}: ${msg.text.slice(0, 80)}`);
       } catch {
-        // Channel push failed — check_messages will pick it up
+        // Channel push failed — leave message for check_messages to pick up.
+        // Do NOT add to channelPushedIds so the message stays visible.
+        log(`Channel push failed for msg ${msg.id}, will be available via check_messages`);
       }
     }
   } catch (e) {
@@ -959,8 +965,39 @@ async function main() {
   });
   myId = reg.id;
   log(`Registered as peer ${myId} (PID ${process.pid})`);
+  if (reg.channels?.length) {
+    log(`Auto-joined channels: ${reg.channels.join(', ')}`);
+  }
 
-  // 4b. Verify identity — ensure our ID actually maps to our PID in the broker.
+  // 4b. Fetch scrollback from #general
+  try {
+    const scrollback = await brokerFetch<ChannelMessagesResponse>("/channel-messages", {
+      channel_id: "general",
+      limit: 20,
+    });
+    if (scrollback.messages.length > 0) {
+      log(`Scrollback: ${scrollback.messages.length} recent messages in #general`);
+      const summary = scrollback.messages.map((m) => {
+        const tag = m.tag ? `[${m.tag}] ` : "";
+        return `${tag}${m.from_id}: ${m.text.slice(0, 200)}`;
+      }).join("\n");
+      try {
+        await mcp.notification({
+          method: "notifications/claude/channel",
+          params: {
+            content: `Recent messages from #general:\n${summary}`,
+            meta: { type: "scrollback", channel: "general" },
+          },
+        });
+      } catch {
+        // Channel push not available — scrollback accessible via channel_messages tool
+      }
+    }
+  } catch {
+    log("Scrollback fetch failed (non-critical)");
+  }
+
+  // 4c. Verify identity — ensure our ID actually maps to our PID in the broker.
   // This catches any registration race conditions or ID assignment bugs.
   try {
     const allPeers = await brokerFetch<Peer[]>("/list-peers", {

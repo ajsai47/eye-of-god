@@ -137,6 +137,10 @@ db.run(`
   )
 `);
 
+// Ensure default #general channel exists
+db.run(`INSERT OR IGNORE INTO channels (id, name, created_at) VALUES ('general', '#general', ?)`,
+  [new Date().toISOString()]);
+
 // Clean up stale peers (PIDs that no longer exist) on startup
 function cleanStalePeers() {
   const peers = db.query("SELECT id, pid FROM peers").all() as { id: string; pid: number }[];
@@ -278,7 +282,17 @@ function handleRegister(body: RegisterRequest): RegisterResponse {
   }
 
   insertPeer.run(id, body.pid, body.cwd, body.git_root, body.tty, body.summary ?? "", now, now);
-  return { id };
+
+  // Auto-join #general channel
+  const channels: string[] = [];
+  try {
+    insertChannelMember.run('general', id, now);
+    channels.push('general');
+  } catch {
+    // Channel might not exist yet in edge cases
+  }
+
+  return { id, channels };
 }
 
 function handleHeartbeat(body: HeartbeatRequest): void {

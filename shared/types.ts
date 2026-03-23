@@ -33,6 +33,7 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   id: PeerId;
+  channels?: string[]; // Channel IDs the peer was auto-joined to
 }
 
 export interface HeartbeatRequest {
