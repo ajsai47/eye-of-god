@@ -18,16 +18,16 @@
     <circle cx="60" cy="19" r="6" fill="#28c840"/>
 
     <!-- Title bar text -->
-    <text x="430" y="24" text-anchor="middle" font-family="SF Mono, Menlo, Monaco, 'Courier New', monospace" font-size="12" fill="#6c7086">eye-of-god</text>
+    <text x="430" y="24" text-anchor="middle" font-family="'SF Mono', Menlo, Monaco, 'Courier New', monospace" font-size="12" fill="#6c7086">eye-of-god</text>
 
     <!-- Terminal content -->
-    <g font-family="SF Mono, Menlo, Monaco, 'Courier New', monospace" font-size="13">
+    <g font-family="'SF Mono', Menlo, Monaco, 'Courier New', monospace" font-size="13">
 
-      <!-- Command 1: list_peers -->
+      <!-- Tool call 1: list_peers -->
       <text x="24" y="70">
-        <tspan fill="#a6e3a1">$</tspan>
+        <tspan fill="#a6e3a1">▶</tspan>
         <tspan fill="#cdd6f4"> list_peers </tspan>
-        <tspan fill="#6c7086">--scope repo</tspan>
+        <tspan fill="#6c7086">(scope: "repo")</tspan>
       </text>
       <text x="40" y="92" fill="#cdd6f4">
         <tspan fill="#f59e0b">●</tspan> Claude B <tspan fill="#6c7086">— "refactoring auth middleware"</tspan>
@@ -39,20 +39,20 @@
       <!-- Separator -->
       <line x1="24" y1="130" x2="836" y2="130" stroke="#313244" stroke-width="0.5"/>
 
-      <!-- Command 2: send_message to B -->
+      <!-- Tool call 2: send_message to B -->
       <text x="24" y="152">
-        <tspan fill="#a6e3a1">$</tspan>
-        <tspan fill="#cdd6f4"> send_message </tspan>
-        <tspan fill="#89b4fa">Claude-B</tspan>
+        <tspan fill="#a6e3a1">▶</tspan>
+        <tspan fill="#cdd6f4"> send_message → </tspan>
+        <tspan fill="#89b4fa">Claude B</tspan>
       </text>
       <text x="40" y="172" fill="#bac2de">"Bug found: jwt.verify() line 42 reads JWT_KEY instead of JWT_SECRET.</text>
       <text x="40" y="192" fill="#bac2de"> Can you fix this in your middleware refactor?"</text>
 
-      <!-- Command 3: send_message to C -->
+      <!-- Tool call 3: send_message to C -->
       <text x="24" y="218">
-        <tspan fill="#a6e3a1">$</tspan>
-        <tspan fill="#cdd6f4"> send_message </tspan>
-        <tspan fill="#89b4fa">Claude-C</tspan>
+        <tspan fill="#a6e3a1">▶</tspan>
+        <tspan fill="#cdd6f4"> send_message → </tspan>
+        <tspan fill="#89b4fa">Claude C</tspan>
       </text>
       <text x="40" y="238" fill="#bac2de">"Root cause identified. Add a regression test for the env var mismatch."</text>
 

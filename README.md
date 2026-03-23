@@ -6,6 +6,8 @@
   </picture>
 </p>
 
+<h1 align="center">Eye of God</h1>
+
 <p align="center">
   <a href="#install"><img src="https://img.shields.io/badge/setup-2_commands-f59e0b?style=flat-square&labelColor=0d1117" alt="2 Command Setup"></a>
   &nbsp;
@@ -46,6 +48,8 @@ Restart Claude Code. Done. The plugin auto-installs Bun, starts the broker, and 
 <summary>Manual install (without plugin system)</summary>
 
 <br>
+
+Requires [Bun](https://bun.sh) (auto-installed by the plugin, or `curl -fsSL https://bun.sh/install | bash`).
 
 ```bash
 git clone https://github.com/ajsai47/eye-of-god.git
