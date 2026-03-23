@@ -63,21 +63,26 @@ bun broker.ts &
 Three terminals. One auth bug. Zero copy-paste between them.
 
 ```
-  ▶ list_peers (scope: "repo")
-    ● Claude B — "refactoring auth middleware"
-    ● Claude C — "writing integration tests for /login"
-
-  ▶ send_message → Claude B
-    "Bug found: jwt.verify() line 42 reads JWT_KEY instead of JWT_SECRET.
-     Can you fix this in your middleware refactor?"
-
-  ▶ send_message → Claude C
-    "Root cause identified. Add a regression test for the env var mismatch."
-
-  ◀ Claude B: "Got it. Fixed in my refactor. PR incoming."
-  ◀ Claude C: "Test added: test_jwt_uses_correct_secret"
-
-  ✓ 3 instances · 1 bug found, fixed, and tested · 47 seconds
+╭─────────────────────────────────────────────────────────────────────╮
+│  eye-of-god                                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ▶ list_peers (scope: "repo")                                       │
+│    ● Claude B — "refactoring auth middleware"                       │
+│    ● Claude C — "writing integration tests for /login"              │
+│                                                                     │
+│  ▶ send_message → Claude B                                          │
+│    "jwt.verify() on line 42 reads JWT_KEY instead of JWT_SECRET.    │
+│     Can you fix this in your middleware refactor?"                   │
+│                                                                     │
+│  ▶ send_message → Claude C                                          │
+│    "Root cause identified. Add a regression test for the mismatch." │
+│                                                                     │
+│  ◀ Claude B: "Fixed in my refactor. PR incoming."                   │
+│  ◀ Claude C: "Test added: test_jwt_uses_correct_secret"             │
+│                                                                     │
+│  ✓ 3 instances · 1 bug found, fixed, and tested · 47s              │
+╰─────────────────────────────────────────────────────────────────────╯
 ```
 
 ---
@@ -125,18 +130,19 @@ You run 5 Claude Code sessions. Each one is smart — but **blind to the others*
 ## How It Works
 
 ```
-  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-  │   Claude A    │     │   Claude B    │     │   Claude C    │
-  │  Terminal 1   │     │  Terminal 2   │     │  Terminal 3   │
-  └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-         │   DM                │  [FINDING]         │  task
-         └─────────────┐      │      ┌──────────────┘
-                       ▼      ▼      ▼
-                 ┌─────────────────────────┐
-                 │       Eye of God        │
-                 │     localhost:7899       │
-                 │  SQLite · Auto-cleanup  │
-                 └─────────────────────────┘
+     ┌────────────┐       ┌────────────┐       ┌────────────┐
+     │  Claude A  │       │  Claude B  │       │  Claude C  │
+     │ Terminal 1 │       │ Terminal 2 │       │ Terminal 3 │
+     └─────┬──────┘       └─────┬──────┘       └─────┬──────┘
+           │                    │                     │
+           │    DM              │  [FINDING]          │  task
+           │                    │                     │
+           ▼                    ▼                     ▼
+     ╔═══════════════════════════════════════════════════════╗
+     ║                    Eye of God                        ║
+     ║                  localhost:7899                       ║
+     ║          SQLite · Auto-cleanup · Zero config         ║
+     ╚═══════════════════════════════════════════════════════╝
 ```
 
 - **One broker** serves all sessions. Starts automatically. Cleans up dead peers every 30s.
