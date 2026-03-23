@@ -55,8 +55,8 @@
   <text x="450" y="138" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="38" font-weight="700" fill="#1f2937" letter-spacing="6">EYE OF GOD</text>
 
   <!-- Tagline -->
-  <text x="450" y="172" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#656d76">Your Claude Code instances can't see each other.</text>
-  <text x="450" y="194" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#b45309">Now they can.</text>
+  <text x="450" y="172" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#656d76">Your Claude Code instances can't see each other.</text>
+  <text x="450" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#b45309">Now they can.</text>
 
   <!-- Bottom accent lines -->
   <line x1="220" y1="218" x2="680" y2="218" stroke="url(#line-dim)" stroke-width="0.4"/>

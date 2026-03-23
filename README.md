@@ -9,6 +9,10 @@
 <h1 align="center">Eye of God</h1>
 
 <p align="center">
+  <strong>Your Claude Code instances can't see each other. Now they can.</strong>
+</p>
+
+<p align="center">
   <a href="#install"><img src="https://img.shields.io/badge/setup-2_commands-f59e0b?style=flat-square&labelColor=0d1117" alt="2 Command Setup"></a>
   &nbsp;
   <a href="https://bun.sh"><img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=flat-square&labelColor=0d1117&logo=bun" alt="Bun"></a>
@@ -18,7 +22,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=flat-square&labelColor=0d1117" alt="MIT License"></a>
 </p>
 
-<div align="center">
+<p align="center">
   <a href="#install">Install</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="#see-it-in-action">Demo</a>
@@ -28,9 +32,9 @@
   <a href="#how-it-works">Architecture</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="#api-reference">API</a>
-</div>
+</p>
 
-<br>
+---
 
 ## Install
 
@@ -59,7 +63,7 @@ bun broker.ts &
 
 </details>
 
-<br>
+---
 
 ## See It In Action
 
@@ -69,7 +73,7 @@ Three terminals. One auth bug. Zero copy-paste between them.
   <img src="assets/demo.svg" alt="Eye of God Demo" width="100%">
 </p>
 
-<br>
+---
 
 ## What You Get
 
@@ -95,7 +99,7 @@ Three terminals. One auth bug. Zero copy-paste between them.
 > [!NOTE]
 > Every instance auto-joins `#general` on connect and gets the last 20 messages as scrollback.
 
-<br>
+---
 
 ## The Problem
 
@@ -109,7 +113,7 @@ You run 5 Claude Code sessions. Each one is smart — but **blind to the others*
 | Copy-paste between terminals | Direct messaging between instances |
 | "What was that other Claude doing?" | `list_peers` shows everyone + summaries |
 
-<br>
+---
 
 ## How It Works
 
@@ -126,7 +130,7 @@ You run 5 Claude Code sessions. Each one is smart — but **blind to the others*
 - **Auto-join `#general`** — every instance gets a shared channel immediately.
 - **Message push** — DMs arrive as notifications, no polling needed.
 
-<br>
+---
 
 ## Collaborative Patterns
 
@@ -140,7 +144,7 @@ Real patterns that emerge when your instances can talk:
 | **Breadth vs Depth** | One explores broadly, another traces deeply on the most likely path |
 | **Task Decomposition** | Break work into tasks on the shared board, claim and complete in parallel |
 
-<br>
+---
 
 ## The Full Stack
 
@@ -161,7 +165,7 @@ Eye of God pairs with [claude-mem](https://github.com/thedotmack/claude-mem) for
 > [!IMPORTANT]
 > Communication without memory is amnesia. Memory without communication is isolation. **Use both.**
 
-<br>
+---
 
 <details>
 <summary><h2>API Reference</h2></summary>
@@ -286,8 +290,6 @@ bun cli.ts kill-broker       # stop the broker
 ```
 
 </details>
-
-<br>
 
 ---
 

@@ -44,9 +44,9 @@
   </g>
 
   <!-- Flow labels -->
-  <text x="220" y="148" font-family="'SF Mono', Menlo, monospace" font-size="10" fill="#d97706" opacity="0.7" transform="rotate(-30, 220, 148)">DM</text>
-  <text x="406" y="142" font-family="'SF Mono', Menlo, monospace" font-size="10" fill="#d97706" opacity="0.7">[FINDING]</text>
-  <text x="560" y="148" font-family="'SF Mono', Menlo, monospace" font-size="10" fill="#6366f1" opacity="0.7" transform="rotate(30, 560, 148)">task</text>
+  <text x="220" y="148" font-family="'SF Mono', Menlo, monospace" font-size="12" fill="#d97706" opacity="0.7" transform="rotate(-30, 220, 148)">DM</text>
+  <text x="406" y="142" font-family="'SF Mono', Menlo, monospace" font-size="12" fill="#d97706" opacity="0.7">[FINDING]</text>
+  <text x="560" y="148" font-family="'SF Mono', Menlo, monospace" font-size="12" fill="#6366f1" opacity="0.7" transform="rotate(30, 560, 148)">task</text>
 
   <!-- Broker box -->
   <g>
@@ -54,6 +54,6 @@
     <rect x="300" y="180" width="200" height="85" rx="10" fill="#d97706" opacity="0.02"/>
     <text x="400" y="208" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2937">Eye of God</text>
     <text x="400" y="228" text-anchor="middle" font-family="'SF Mono', Menlo, monospace" font-size="11" fill="#656d76">localhost:7899</text>
-    <text x="400" y="252" text-anchor="middle" font-family="'SF Mono', Menlo, monospace" font-size="10" fill="#8b949e">SQLite · Auto-cleanup · Zero config</text>
+    <text x="400" y="252" text-anchor="middle" font-family="'SF Mono', Menlo, monospace" font-size="11" fill="#8b949e">SQLite · Auto-cleanup · Zero config</text>
   </g>
 </svg>
