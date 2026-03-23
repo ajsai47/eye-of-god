@@ -30,7 +30,8 @@ if BUN_PATH=$(find_bun); then
   BUN_VER=$("$BUN_PATH" --version 2>/dev/null || echo "unknown")
   echo "[eye-of-god] Bun found: $BUN_PATH ($BUN_VER)" >&2
 else
-  echo "[eye-of-god] Bun not found, installing..." >&2
+  echo "[eye-of-god] Bun not found. Installing Bun (https://bun.sh)..." >&2
+  echo "[eye-of-god] To skip auto-install, install Bun manually and retry." >&2
   curl -fsSL https://bun.sh/install | bash 2>&1 >&2
 
   # Source the updated PATH
