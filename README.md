@@ -279,7 +279,7 @@ Instance A:  "claim-task: 2"  →  works on it  →  "update-task: 2, done"
 |---|---|---|
 | `CLAUDE_PEERS_PORT` | `7899` | Broker port |
 | `CLAUDE_PEERS_DB` | `~/.claude-peers.db` | SQLite database path |
-| `OPENAI_API_KEY` | — | Enables auto-summary via gpt-5.4-nano |
+| `OPENAI_API_KEY` | — | Optional: enables auto-summary generation |
 
 ---
 
@@ -287,13 +287,14 @@ Instance A:  "claim-task: 2"  →  works on it  →  "update-task: 2, done"
 
 ```
 eye-of-god/
-├── broker.ts          # Singleton HTTP daemon + SQLite
-├── server.ts          # MCP server (optional — broker API preferred)
+├── broker.ts          # Singleton HTTP daemon + SQLite (the core)
 ├── cli.ts             # CLI for inspecting broker state
 ├── collab.sh          # Shell helper for subagent participation
+├── test-e2e.sh        # End-to-end test suite (39 tests)
 ├── shared/
 │   ├── types.ts       # TypeScript types for broker API
-│   └── summarize.ts   # Auto-summary generation
+│   └── summarize.ts   # Optional auto-summary generation
+├── server.ts          # MCP server (legacy — use broker API directly)
 ├── CLAUDE.md          # Instructions for Claude Code
 └── package.json
 ```

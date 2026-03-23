@@ -2,7 +2,7 @@
 # collab.sh — Shell helper for subagents to interact with the claude-peers broker
 #
 # Usage from any subagent:
-#   source ~/claude-peers-mcp/collab.sh
+#   source /path/to/eye-of-god/collab.sh
 #   collab_register "researcher" "Deep code analysis"
 #   collab_broadcast "collab-abc123" "FINDING" "The auth bug is in middleware.ts:42"
 #   collab_messages "collab-abc123"
