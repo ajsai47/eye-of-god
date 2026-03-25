@@ -148,7 +148,22 @@ let myGitRoot: string | null = null;
 
 // Track message IDs already pushed via channel to avoid duplicate notifications.
 // Messages are NOT marked as delivered in DB by the poll loop — only by check_messages.
+// Pruned to last 1000 entries to prevent unbounded growth.
 const channelPushedIds = new Set<number>();
+const MAX_PUSHED_IDS = 1000;
+
+function trackPushedId(id: number) {
+  channelPushedIds.add(id);
+  if (channelPushedIds.size > MAX_PUSHED_IDS) {
+    // Delete oldest entries (Set iterates in insertion order)
+    const excess = channelPushedIds.size - MAX_PUSHED_IDS;
+    let i = 0;
+    for (const old of channelPushedIds) {
+      if (i++ >= excess) break;
+      channelPushedIds.delete(old);
+    }
+  }
+}
 
 // --- MCP Server ---
 
@@ -904,7 +919,7 @@ async function pollAndPushMessages() {
             },
           },
         });
-        channelPushedIds.add(msg.id);
+        trackPushedId(msg.id);
         log(`Pushed message from ${msg.from_id}: ${msg.text.slice(0, 80)}`);
       } catch {
         // Channel push failed — leave message for check_messages to pick up.

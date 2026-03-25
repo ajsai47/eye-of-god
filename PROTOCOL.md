@@ -893,7 +893,7 @@ A conformant Eye of God broker MUST:
 5. Periodically verify that registered PIDs are alive and clean up dead peers.
 6. Emit SSE events on `GET /events` for all state changes.
 7. Send an `init` event with full state on SSE connection.
-8. Send `keepalive` events at least every 30 seconds.
+8. Send `keepalive` events at least every 15 seconds.
 9. Return `Content-Type: application/json` for all POST responses.
 10. Support CORS headers for browser-based clients.
 

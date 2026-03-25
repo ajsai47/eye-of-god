@@ -17,6 +17,10 @@ async function post(endpoint, data) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${endpoint} failed (${res.status}): ${text}`);
+  }
   return res.json();
 }
 

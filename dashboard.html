@@ -672,7 +672,7 @@ async function registerDashboard() {
   try {
     const res = await fetch(`${BROKER}/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pid: 0, cwd: '/', git_root: null, tty: null, summary: 'Observatory Dashboard', agent_type: 'dashboard' }),
+      body: JSON.stringify({ pid: -1, cwd: '/', git_root: null, tty: null, summary: 'Observatory Dashboard', agent_type: 'dashboard' }),
     });
     const data = await res.json();
     state.dashboardPeerId = data.id;

@@ -155,6 +155,7 @@ db.run(`INSERT OR IGNORE INTO channels (id, name, created_at) VALUES ('general',
 function cleanStalePeers() {
   const peers = db.query("SELECT id, pid FROM peers").all() as { id: string; pid: number }[];
   for (const peer of peers) {
+    if (peer.pid <= 0) continue; // Skip dashboard/non-process peers
     try {
       // Check if process is still alive (signal 0 doesn't kill, just checks)
       process.kill(peer.pid, 0);
@@ -207,14 +208,23 @@ function getFullState() {
 
 // --- CORS helper ---
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+function corsOrigin(req?: Request): string {
+  const origin = req?.headers.get("Origin") ?? "";
+  // Only allow localhost origins (any port)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
+  return "http://127.0.0.1:" + PORT;
+}
 
-function corsJson(data: unknown, status = 200) {
-  return Response.json(data, { status, headers: CORS_HEADERS });
+function makeCorsHeaders(req?: Request) {
+  return {
+    "Access-Control-Allow-Origin": corsOrigin(req),
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
+
+function corsJson(data: unknown, status = 200, req?: Request) {
+  return Response.json(data, { status, headers: makeCorsHeaders(req) });
 }
 
 // Dashboard HTML path (served as static file)
@@ -477,7 +487,9 @@ function handleLeaveChannel(body: LeaveChannelRequest): void {
   deleteChannelMember.run(body.channel_id, body.agent_id);
 }
 
-function handleChannelBroadcast(body: ChannelBroadcastRequest): { ok: boolean; id: number } {
+function handleChannelBroadcast(body: ChannelBroadcastRequest): { ok: boolean; id?: number; error?: string } {
+  const channel = db.query("SELECT id FROM channels WHERE id = ?").get(body.channel_id);
+  if (!channel) return { ok: false, error: `Channel ${body.channel_id} not found` };
   const now = new Date().toISOString();
   const result = insertChannelMessage.run(body.channel_id, body.from_id, body.tag ?? "", body.text, now);
   const msgId = Number(result.lastInsertRowid);
@@ -511,19 +523,18 @@ function handleCreateSharedTask(body: CreateSharedTaskRequest): CreateSharedTask
 }
 
 function handleClaimSharedTask(body: ClaimSharedTaskRequest): { ok: boolean; error?: string } {
-  const task = db.query("SELECT * FROM shared_tasks WHERE id = ?").get(body.task_id) as SharedTask | null;
-  if (!task) {
-    return { ok: false, error: `Task ${body.task_id} not found` };
-  }
-  if (task.status !== "open") {
+  const claimedAt = new Date().toISOString();
+  // Atomic claim: UPDATE only if still open (prevents race condition)
+  const result = db.run(
+    "UPDATE shared_tasks SET status = 'claimed', claimed_by = ?, updated_at = ? WHERE id = ? AND status = 'open'",
+    [body.agent_id, claimedAt, body.task_id]
+  );
+  if (result.changes === 0) {
+    const task = db.query("SELECT status FROM shared_tasks WHERE id = ?").get(body.task_id) as { status: string } | null;
+    if (!task) return { ok: false, error: `Task ${body.task_id} not found` };
     return { ok: false, error: `Task ${body.task_id} is already ${task.status}` };
   }
-  const claimedAt = new Date().toISOString();
-  db.run("UPDATE shared_tasks SET status = 'claimed', claimed_by = ?, updated_at = ? WHERE id = ?", [
-    body.agent_id,
-    claimedAt,
-    body.task_id,
-  ]);
+  const task = db.query("SELECT subject FROM shared_tasks WHERE id = ?").get(body.task_id) as { subject: string };
   emitEvent("task:claim", { task_id: body.task_id, agent_id: body.agent_id, subject: task.subject });
   return { ok: true };
 }
@@ -536,9 +547,7 @@ function handleUpdateSharedTask(body: UpdateSharedTaskRequest): { ok: boolean; e
   const now = new Date().toISOString();
   if (body.status) {
     db.run("UPDATE shared_tasks SET status = ?, updated_at = ? WHERE id = ?", [body.status, now, body.task_id]);
-    if (body.status === "done") {
-      emitEvent("task:done", { task_id: body.task_id, subject: task.subject, claimed_by: task.claimed_by });
-    }
+    emitEvent(`task:${body.status}`, { task_id: body.task_id, subject: task.subject, claimed_by: task.claimed_by, status: body.status });
   }
   if (body.description !== undefined) {
     db.run("UPDATE shared_tasks SET description = ?, updated_at = ? WHERE id = ?", [body.description, now, body.task_id]);
@@ -562,9 +571,11 @@ Bun.serve({
     const url = new URL(req.url);
     const path = url.pathname;
 
+    const CORS = makeCorsHeaders(req);
+
     // CORS preflight
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: CORS });
     }
 
     if (req.method === "GET") {
@@ -573,13 +584,13 @@ Bun.serve({
           const peerCount = (selectAllPeers.all() as Peer[]).length;
           const channelCount = (db.query("SELECT COUNT(*) as n FROM channels").get() as { n: number }).n;
           const agentCount = (db.query("SELECT COUNT(*) as n FROM agents").get() as { n: number }).n;
-          return corsJson({ status: "ok", peers: peerCount, channels: channelCount, agents: agentCount });
+          return corsJson({ status: "ok", peers: peerCount, channels: channelCount, agents: agentCount }, 200, req);
         }
 
         case "/dashboard": {
           const file = Bun.file(DASHBOARD_PATH);
           return new Response(file, {
-            headers: { "Content-Type": "text/html; charset=utf-8", ...CORS_HEADERS },
+            headers: { "Content-Type": "text/html; charset=utf-8", ...CORS },
           });
         }
 
@@ -609,83 +620,88 @@ Bun.serve({
               "Content-Type": "text/event-stream",
               "Cache-Control": "no-cache",
               "Connection": "keep-alive",
-              ...CORS_HEADERS,
+              ...CORS,
             },
           });
         }
 
         case "/state":
-          return corsJson(getFullState());
+          return corsJson(getFullState(), 200, req);
 
         default:
-          return new Response("claude-peers broker", { status: 200, headers: CORS_HEADERS });
+          return new Response("claude-peers broker", { status: 200, headers: CORS });
       }
     }
 
     if (req.method !== "POST") {
-      return new Response("claude-peers broker", { status: 200, headers: CORS_HEADERS });
+      return new Response("claude-peers broker", { status: 200, headers: CORS });
+    }
+
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return corsJson({ error: "Invalid JSON body" }, 400, req);
     }
 
     try {
-      const body = await req.json();
-
       switch (path) {
         case "/register":
-          return corsJson(handleRegister(body as RegisterRequest));
+          return corsJson(handleRegister(body as RegisterRequest), 200, req);
         case "/heartbeat":
           handleHeartbeat(body as HeartbeatRequest);
-          return corsJson({ ok: true });
+          return corsJson({ ok: true }, 200, req);
         case "/set-summary":
           handleSetSummary(body as SetSummaryRequest);
-          return corsJson({ ok: true });
+          return corsJson({ ok: true }, 200, req);
         case "/list-peers":
-          return corsJson(handleListPeers(body as ListPeersRequest));
+          return corsJson(handleListPeers(body as ListPeersRequest), 200, req);
         case "/send-message":
-          return corsJson(handleSendMessage(body as SendMessageRequest));
+          return corsJson(handleSendMessage(body as SendMessageRequest), 200, req);
         case "/poll-messages":
-          return corsJson(handlePollMessages(body as PollMessagesRequest));
+          return corsJson(handlePollMessages(body as PollMessagesRequest), 200, req);
         case "/peek-messages":
-          return corsJson(handlePeekMessages(body as PollMessagesRequest));
+          return corsJson(handlePeekMessages(body as PollMessagesRequest), 200, req);
         case "/unregister":
           handleUnregister(body as { id: string });
-          return corsJson({ ok: true });
+          return corsJson({ ok: true }, 200, req);
 
         // --- Collaboration endpoints ---
         case "/register-agent":
-          return corsJson(handleRegisterAgent(body as RegisterAgentRequest));
+          return corsJson(handleRegisterAgent(body as RegisterAgentRequest), 200, req);
         case "/unregister-agent":
           handleUnregisterAgent(body as UnregisterAgentRequest);
-          return corsJson({ ok: true });
+          return corsJson({ ok: true }, 200, req);
         case "/create-channel":
-          return corsJson(handleCreateChannel(body as CreateChannelRequest));
+          return corsJson(handleCreateChannel(body as CreateChannelRequest), 200, req);
         case "/join-channel":
-          return corsJson(handleJoinChannel(body as JoinChannelRequest));
+          return corsJson(handleJoinChannel(body as JoinChannelRequest), 200, req);
         case "/leave-channel":
           handleLeaveChannel(body as LeaveChannelRequest);
-          return corsJson({ ok: true });
+          return corsJson({ ok: true }, 200, req);
         case "/channel-broadcast":
-          return corsJson(handleChannelBroadcast(body as ChannelBroadcastRequest));
+          return corsJson(handleChannelBroadcast(body as ChannelBroadcastRequest), 200, req);
         case "/channel-messages":
-          return corsJson(handleChannelMessages(body as ChannelMessagesRequest));
+          return corsJson(handleChannelMessages(body as ChannelMessagesRequest), 200, req);
         case "/channel-members":
-          return corsJson(handleChannelMembers(body as ChannelMembersRequest));
+          return corsJson(handleChannelMembers(body as ChannelMembersRequest), 200, req);
         case "/create-task":
-          return corsJson(handleCreateSharedTask(body as CreateSharedTaskRequest));
+          return corsJson(handleCreateSharedTask(body as CreateSharedTaskRequest), 200, req);
         case "/claim-task":
-          return corsJson(handleClaimSharedTask(body as ClaimSharedTaskRequest));
+          return corsJson(handleClaimSharedTask(body as ClaimSharedTaskRequest), 200, req);
         case "/update-task":
-          return corsJson(handleUpdateSharedTask(body as UpdateSharedTaskRequest));
+          return corsJson(handleUpdateSharedTask(body as UpdateSharedTaskRequest), 200, req);
         case "/list-tasks":
-          return corsJson(handleListSharedTasks(body as ListSharedTasksRequest));
+          return corsJson(handleListSharedTasks(body as ListSharedTasksRequest), 200, req);
         case "/list-channels":
-          return corsJson(db.query("SELECT * FROM channels ORDER BY created_at DESC").all());
+          return corsJson(db.query("SELECT * FROM channels ORDER BY created_at DESC").all(), 200, req);
 
         default:
-          return corsJson({ error: "not found" }, 404);
+          return corsJson({ error: "not found" }, 404, req);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      return corsJson({ error: msg }, 500);
+      return corsJson({ error: msg }, 500, req);
     }
   },
 });

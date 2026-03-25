@@ -13,6 +13,7 @@ Requires: Python 3.7+ (only stdlib, no pip install needed)
 
 import json
 import os
+import urllib.error
 import urllib.request
 import time
 
@@ -28,8 +29,13 @@ def post(endpoint: str, data: dict) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return json.loads(resp.read())
+    except urllib.error.URLError as e:
+        print(f"Error: Cannot connect to broker at {BROKER}")
+        print(f"  Make sure the broker is running: bun broker.ts")
+        raise SystemExit(1) from e
 
 
 def main():
