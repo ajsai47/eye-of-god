@@ -45,6 +45,7 @@ const BROKER_URL = `http://127.0.0.1:${BROKER_PORT}`;
 const POLL_INTERVAL_MS = 1000;
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const BROKER_SCRIPT = new URL("./broker.ts", import.meta.url).pathname;
+const AGENT_TYPE = process.env.AGENT_TYPE ?? "claude-code";
 
 // --- Broker communication ---
 
@@ -466,6 +467,7 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
         const lines = peers.map((p) => {
           const parts = [
             `ID: ${p.id}`,
+            `Type: ${p.agent_type ?? "unknown"}`,
             `PID: ${p.pid}`,
             `CWD: ${p.cwd}`,
           ];
@@ -962,6 +964,7 @@ async function main() {
     git_root: myGitRoot,
     tty,
     summary: initialSummary,
+    agent_type: AGENT_TYPE,
   });
   myId = reg.id;
   log(`Registered as peer ${myId} (PID ${process.pid})`);

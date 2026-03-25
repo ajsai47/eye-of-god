@@ -16,6 +16,7 @@
 COLLAB_BROKER="${CLAUDE_PEERS_BROKER_URL:-http://127.0.0.1:7899}"
 COLLAB_AGENT_ID=""
 COLLAB_INSTANCE_ID="${COLLAB_INSTANCE_ID:-unknown}"
+COLLAB_AGENT_TYPE="${COLLAB_AGENT_TYPE:-shell}"
 
 _collab_curl="${COLLAB_CURL:-$(command -v curl 2>/dev/null || echo /usr/bin/curl)}"
 
@@ -25,6 +26,18 @@ _collab_post() {
   "$_collab_curl" -s -X POST "${COLLAB_BROKER}${path}" \
     -H "Content-Type: application/json" \
     -d "$data" 2>/dev/null
+}
+
+# Register as a peer (top-level agent) with the broker
+# Usage: collab_register_peer [summary]
+collab_register_peer() {
+  local summary="${1:-}"
+  local result
+  result=$(_collab_post "/register" \
+    "{\"pid\":$$,\"cwd\":\"$(pwd)\",\"git_root\":null,\"tty\":null,\"summary\":\"${summary}\",\"agent_type\":\"${COLLAB_AGENT_TYPE}\"}")
+  COLLAB_INSTANCE_ID=$(echo "$result" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null)
+  COLLAB_AGENT_ID="$COLLAB_INSTANCE_ID"
+  echo "Registered peer: ${COLLAB_INSTANCE_ID} (type: ${COLLAB_AGENT_TYPE})"
 }
 
 # Register this subagent with the broker

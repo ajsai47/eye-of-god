@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eye of God</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --surface-hover: #18181b;
+    --surface-raised: #1c1c1f;
+    --border: #27272a;
+    --border-subtle: #1e1e21;
+    --text: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
+    --accent: #818cf8;
+    --accent-hover: #6366f1;
+    --green: #4ade80;
+    --green-dim: #166534;
+    --yellow: #facc15;
+    --yellow-dim: #713f12;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --blue-dim: #1e3a5f;
+    --purple: #c084fc;
+    --cyan: #22d3ee;
+    --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Menlo', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; overflow: hidden; height: 100vh; }
+
+  /* -- Layout: Slack-style sidebar + main content -- */
+  .app { display: flex; height: 100vh; }
+
+  /* -- Sidebar -- */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sidebar-header h1 { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .sidebar-header h1 span { color: var(--text-tertiary); font-weight: 400; font-size: 12px; margin-left: 4px; }
+  #connection-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); transition: background 0.3s, box-shadow 0.3s; }
+  #connection-dot.connected { background: var(--green); box-shadow: 0 0 6px rgba(74,222,128,0.4); }
+  #connection-dot.error { background: var(--red); }
+
+  .sidebar-section { padding: 12px 0; }
+  .sidebar-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    padding: 0 16px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sidebar-section-title .badge {
+    font-size: 10px;
+    background: var(--surface-raised);
+    color: var(--text-tertiary);
+    padding: 0 5px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  /* Nav items (view switcher) */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border: none;
+    background: none;
+    font-family: var(--font);
+    font-size: 13px;
+    width: 100%;
+    text-align: left;
+    border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+  .nav-item.active { background: var(--surface-hover); color: var(--text); border-left-color: var(--accent); }
+  .nav-icon { width: 16px; font-size: 14px; text-align: center; flex-shrink: 0; }
+  .nav-key { margin-left: auto; font-size: 10px; color: var(--text-tertiary); font-family: var(--mono); opacity: 0.5; }
+
+  /* Channel list in sidebar */
+  .channel-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 16px 4px 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    border: none;
+    background: none;
+    font-family: var(--font);
+    width: 100%;
+    text-align: left;
+    transition: background 0.1s;
+  }
+  .channel-item:hover { background: var(--surface-hover); color: var(--text); }
+  .channel-item.active { background: var(--surface-hover); color: var(--text); font-weight: 600; }
+  .channel-hash { color: var(--text-tertiary); font-size: 14px; font-weight: 400; }
+
+  /* Peers in sidebar */
+  .peer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    font-size: 12px;
+  }
+  .peer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .peer-dot.claude-code { background: var(--accent); }
+  .peer-dot.codex { background: var(--green); }
+  .peer-dot.cursor { background: var(--yellow); }
+  .peer-dot.gemini { background: var(--cyan); }
+  .peer-dot.shell { background: var(--purple); }
+  .peer-dot.unknown { background: var(--text-tertiary); }
+  .peer-info { flex: 1; min-width: 0; }
+  .peer-name { color: var(--text); font-weight: 500; font-size: 12px; }
+  .peer-name .peer-type { color: var(--text-tertiary); font-weight: 400; font-size: 11px; margin-left: 4px; }
+  .peer-desc { color: var(--text-tertiary); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* -- Main content -- */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+  /* View header bar */
+  .view-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .view-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .view-subtitle { font-size: 12px; color: var(--text-tertiary); }
+
+  .view-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* -- Messages view (Slack-style) -- */
+  .messages-container { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .messages-container::-webkit-scrollbar { width: 6px; }
+  .messages-container::-webkit-scrollbar-track { background: transparent; }
+  .messages-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    padding: 6px 20px;
+    align-items: flex-start;
+    transition: background 0.1s;
+  }
+  .msg:hover { background: var(--surface-hover); }
+  .msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: #fff;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-header { display: flex; align-items: baseline; gap: 8px; }
+  .msg-from { font-weight: 600; color: var(--text); font-size: 13px; }
+  .msg-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .tag-FINDING { background: var(--blue-dim); color: var(--blue); }
+  .tag-PROPOSAL { background: var(--green-dim); color: var(--green); }
+  .tag-CHALLENGE { background: var(--yellow-dim); color: var(--yellow); }
+  .tag-QUESTION { background: #2e1065; color: var(--purple); }
+  .msg-time { font-size: 11px; color: var(--text-tertiary); }
+  .msg-text { color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-top: 2px; word-break: break-word; white-space: pre-wrap; }
+
+  /* Date divider */
+  .date-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+  .date-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* -- Compose bar -- */
+  .compose-bar {
+    padding: 8px 20px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .compose-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    transition: border-color 0.15s;
+  }
+  .compose-wrap:focus-within { border-color: var(--accent); }
+  .compose-tag-select {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-tertiary);
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font);
+    cursor: pointer;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .compose-tag-select:focus { outline: none; border-color: var(--accent); }
+  .compose-tag-select option { background: var(--surface); color: var(--text); }
+  .compose-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font);
+    resize: none;
+    line-height: 1.5;
+    max-height: 120px;
+    outline: none;
+  }
+  .compose-input::placeholder { color: var(--text-tertiary); }
+  .compose-send {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    flex-shrink: 0;
+    align-self: center;
+    transition: background 0.15s;
+  }
+  .compose-send:hover { background: var(--accent-hover); }
+  .compose-send:disabled { opacity: 0.4; cursor: default; }
+  .compose-hint { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; padding-left: 2px; }
+
+  /* -- Task Board view (Linear-style) -- */
+  .board { display: flex; flex: 1; overflow-x: auto; gap: 0; background: var(--bg); }
+  .board-col { min-width: 300px; flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border-subtle); overflow: hidden; }
+  .board-col:last-child { border-right: none; }
+
+  .col-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .status-icon { width: 14px; height: 14px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; }
+  .status-icon.open { border-color: var(--blue); }
+  .status-icon.claimed { border-color: var(--yellow); background: var(--yellow); }
+  .status-icon.claimed::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--yellow-dim); }
+  .status-icon.done { border-color: var(--green); background: var(--green); }
+  .status-icon.done::after { content: '\2713'; font-size: 9px; color: #000; font-weight: 800; }
+  .col-count { color: var(--text-tertiary); font-weight: 400; font-size: 11px; }
+
+  .col-body { flex: 1; overflow-y: auto; padding: 6px 8px; }
+  .col-body::-webkit-scrollbar { width: 4px; }
+  .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .task {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .task:hover { border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .task-id { font-size: 11px; color: var(--text-tertiary); font-family: var(--mono); margin-bottom: 4px; }
+  .task-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .task-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .task-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 8px; }
+  .task-assignee { font-size: 11px; color: var(--text-tertiary); font-family: var(--mono); display: flex; align-items: center; gap: 4px; }
+  .task-assignee .assign-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .task-time { font-size: 10px; color: var(--text-tertiary); }
+  .task-channel { font-size: 10px; color: var(--text-tertiary); background: var(--surface-raised); padding: 1px 6px; border-radius: 4px; }
+  .task-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .task-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(129,140,248,0.08); }
+
+  /* -- Task Detail Panel (slide-out) -- */
+  .task-panel-overlay {
+    display: none;
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    animation: fadeIn 0.15s ease;
+  }
+  .task-panel-overlay.open { display: block; }
+  .task-panel {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 420px;
+    max-width: 90%;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+  }
+  .task-panel.open { transform: translateX(0); }
+  .task-panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .task-panel-close {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+  .task-panel-close:hover { background: var(--surface-hover); color: var(--text); }
+  .task-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .task-panel-id { font-size: 12px; color: var(--text-tertiary); font-family: var(--mono); margin-bottom: 8px; }
+  .task-panel-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.3; }
+  .task-panel-section { margin-bottom: 20px; }
+  .task-panel-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px; }
+  .task-panel-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .task-panel-status.open { background: var(--blue-dim); color: var(--blue); }
+  .task-panel-status.claimed { background: var(--yellow-dim); color: var(--yellow); }
+  .task-panel-status.done { background: var(--green-dim); color: var(--green); }
+  .task-panel-desc-edit {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font);
+    padding: 10px 12px;
+    resize: vertical;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .task-panel-desc-edit:focus { border-color: var(--accent); }
+  .task-panel-actions {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--border);
+  }
+  .panel-btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .panel-btn-primary:hover { background: var(--accent-hover); }
+  .panel-btn-secondary { background: var(--surface-raised); color: var(--text-secondary); }
+  .panel-btn-secondary:hover { background: var(--surface-hover); color: var(--text); }
+  .panel-btn-danger { background: none; color: var(--red); border-color: transparent; }
+  .panel-btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+  /* -- Activity view -- */
+  .activity-container { flex: 1; overflow-y: auto; }
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 20px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.1s;
+  }
+  .activity-item:hover { background: var(--surface-hover); }
+  .activity-icon { width: 20px; text-align: center; font-size: 13px; flex-shrink: 0; }
+  .activity-time { color: var(--text-tertiary); font-size: 11px; font-family: var(--mono); flex-shrink: 0; min-width: 60px; }
+  .activity-text { color: var(--text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* -- Empty states -- */
+  .empty-state { color: var(--text-tertiary); text-align: center; padding: 60px 20px; font-size: 13px; }
+  .empty-state-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-state-title { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+  .empty-state-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 8px; font-family: var(--mono); background: var(--surface-raised); display: inline-block; padding: 4px 10px; border-radius: 4px; }
+
+  /* Hidden views */
+  .view { display: none; flex: 1; flex-direction: column; overflow: hidden; opacity: 0; transition: opacity 0.15s ease; }
+  .view.active { display: flex; opacity: 1; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Eye of God <span>v3</span></h1>
+      <div id="connection-dot" title="Connecting..."></div>
+    </div>
+
+    <!-- Views nav -->
+    <div class="sidebar-section">
+      <button class="nav-item active" onclick="switchView('messages')" id="nav-messages">
+        <span class="nav-icon">#</span> Messages <span class="nav-key">1</span>
+      </button>
+      <button class="nav-item" onclick="switchView('board')" id="nav-board">
+        <span class="nav-icon">&squarf;</span> Board <span class="nav-key">2</span>
+      </button>
+      <button class="nav-item" onclick="switchView('activity')" id="nav-activity">
+        <span class="nav-icon">&compfn;</span> Activity <span class="nav-key">3</span>
+      </button>
+    </div>
+
+    <!-- Channels -->
+    <div class="sidebar-section" style="border-top:1px solid var(--border);flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="sidebar-section-title">
+        Channels <span class="badge" id="channel-count">0</span>
+      </div>
+      <div id="channel-list" style="overflow-y:auto;flex:1;"></div>
+    </div>
+
+    <!-- Peers -->
+    <div class="sidebar-section" style="border-top:1px solid var(--border);">
+      <div class="sidebar-section-title">
+        Online <span class="badge" id="peer-count">0</span>
+      </div>
+      <div id="peers-list"></div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- Messages View -->
+    <div class="view active" id="view-messages">
+      <div class="view-header">
+        <span style="color:var(--text-tertiary);font-size:16px;font-weight:500;">#</span>
+        <span class="view-title" id="channel-name">general</span>
+        <span class="view-subtitle" id="channel-meta"></span>
+      </div>
+      <div class="view-content">
+        <div class="messages-container" id="messages-feed"></div>
+        <div class="compose-bar">
+          <div class="compose-wrap">
+            <select class="compose-tag-select" id="compose-tag" title="Message tag">
+              <option value="">no tag</option>
+              <option value="FINDING">FINDING</option>
+              <option value="PROPOSAL">PROPOSAL</option>
+              <option value="CHALLENGE">CHALLENGE</option>
+              <option value="QUESTION">QUESTION</option>
+            </select>
+            <textarea class="compose-input" id="compose-input" rows="1" placeholder="Broadcast to channel..." autocomplete="off"></textarea>
+            <button class="compose-send" id="compose-send" disabled>Send</button>
+          </div>
+          <div class="compose-hint">Enter to send &middot; Shift+Enter for new line &middot; Messages broadcast to current channel</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board View (Linear-style) -->
+    <div class="view" id="view-board">
+      <div class="view-header">
+        <span class="view-title">Task Board</span>
+        <span class="view-subtitle" id="task-total"></span>
+      </div>
+      <div class="view-content">
+        <div class="board">
+          <div class="board-col">
+            <div class="col-header">
+              <span class="status-icon open"></span>
+              Todo
+              <span class="col-count" id="count-open">0</span>
+            </div>
+            <div class="col-body" id="tasks-open"></div>
+          </div>
+          <div class="board-col">
+            <div class="col-header">
+              <span class="status-icon claimed"></span>
+              In Progress
+              <span class="col-count" id="count-claimed">0</span>
+            </div>
+            <div class="col-body" id="tasks-claimed"></div>
+          </div>
+          <div class="board-col">
+            <div class="col-header">
+              <span class="status-icon done"></span>
+              Done
+              <span class="col-count" id="count-done">0</span>
+            </div>
+            <div class="col-body" id="tasks-done"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity View -->
+    <div class="view" id="view-activity">
+      <div class="view-header">
+        <span class="view-title">Activity</span>
+        <span class="view-subtitle">Real-time event stream</span>
+      </div>
+      <div class="view-content">
+        <div class="activity-container" id="activity-feed">
+          <div class="empty-state">
+            <div class="empty-state-icon">&compfn;</div>
+            <div class="empty-state-title">Waiting for events</div>
+            <div style="margin-top:4px;">Agent activity will appear here in real-time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Detail Panel (slide-out) -->
+    <div class="task-panel-overlay" id="task-overlay" onclick="closeTaskPanel()"></div>
+    <div class="task-panel" id="task-panel">
+      <div class="task-panel-header">
+        <span class="task-panel-id" id="panel-task-id"></span>
+        <button class="task-panel-close" onclick="closeTaskPanel()" title="Close (Esc)">&times;</button>
+      </div>
+      <div class="task-panel-body">
+        <div class="task-panel-title" id="panel-task-title"></div>
+        <div class="task-panel-section">
+          <div class="task-panel-label">Status</div>
+          <span class="task-panel-status" id="panel-task-status"></span>
+        </div>
+        <div class="task-panel-section" id="panel-assignee-section" style="display:none;">
+          <div class="task-panel-label">Assigned to</div>
+          <span id="panel-task-assignee" style="font-family:var(--mono);font-size:13px;"></span>
+        </div>
+        <div class="task-panel-section">
+          <div class="task-panel-label">Channel</div>
+          <span id="panel-task-channel" style="font-size:13px;color:var(--text-secondary);"></span>
+        </div>
+        <div class="task-panel-section">
+          <div class="task-panel-label">Created</div>
+          <span id="panel-task-created" style="font-size:12px;color:var(--text-tertiary);"></span>
+        </div>
+        <div class="task-panel-section">
+          <div class="task-panel-label">Description</div>
+          <textarea class="task-panel-desc-edit" id="panel-task-desc" placeholder="Add a description..."></textarea>
+        </div>
+      </div>
+      <div class="task-panel-actions" id="panel-actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BROKER = `http://${location.host}`;
+const state = {
+  peers: [],
+  channels: [],
+  tasks: [],
+  channelMessages: [],
+  selectedChannel: 'general',
+  currentView: 'messages',
+  events: [],
+  openTaskId: null,
+  dashboardPeerId: null,
+};
+
+// Avatar colors by peer ID (deterministic)
+const COLORS = ['#818cf8','#4ade80','#f87171','#facc15','#22d3ee','#c084fc','#fb923c','#e879f9'];
+function peerColor(id) { let h = 0; for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h); return COLORS[Math.abs(h) % COLORS.length]; }
+
+// --- Relative time ---
+function timeAgo(iso) {
+  if (!iso) return '';
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diff = Math.max(0, now - then);
+  const s = Math.floor(diff / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+// Update relative timestamps every 30s
+setInterval(() => {
+  document.querySelectorAll('[data-ts]').forEach(el => {
+    el.textContent = timeAgo(el.dataset.ts);
+  });
+}, 30000);
+
+// --- Register dashboard as a peer for compose ---
+async function registerDashboard() {
+  try {
+    const res = await fetch(`${BROKER}/register`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pid: 0, cwd: '/', git_root: null, tty: null, summary: 'Observatory Dashboard', agent_type: 'dashboard' }),
+    });
+    const data = await res.json();
+    state.dashboardPeerId = data.id;
+  } catch {}
+}
+registerDashboard();
+
+// --- SSE ---
+function connectSSE() {
+  const dot = document.getElementById('connection-dot');
+  dot.className = '';
+  dot.title = 'Connecting...';
+  const es = new EventSource(`${BROKER}/events`);
+  es.onopen = () => { dot.className = 'connected'; dot.title = 'Connected'; };
+  es.onmessage = (e) => { try { handleEvent(JSON.parse(e.data)); } catch {} };
+  es.onerror = () => {
+    if (es.readyState === EventSource.CLOSED) {
+      dot.className = 'error'; dot.title = 'Disconnected \u2014 reconnecting...';
+      setTimeout(connectSSE, 3000);
+    } else {
+      dot.className = 'error'; dot.title = 'Reconnecting...';
+    }
+  };
+}
+
+function handleEvent(event) {
+  switch (event.type) {
+    case 'init':
+      state.peers = event.data.peers || [];
+      state.channels = event.data.channels || [];
+      state.tasks = event.data.tasks || [];
+      state.channelMessages = event.data.channelMessages || [];
+      if (!state.channels.find(c => c.id === state.selectedChannel) && state.channels.length > 0) {
+        state.selectedChannel = state.channels[0].id;
+      }
+      renderAll();
+      break;
+    case 'peer:join':
+      if (!state.peers.find(p => p.id === event.data.id)) state.peers.push(event.data);
+      renderPeers();
+      addActivity('join', `<b>${esc(event.data.id)}</b> joined (${esc(event.data.agent_type)})`, event.timestamp);
+      break;
+    case 'peer:leave':
+      state.peers = state.peers.filter(p => p.id !== event.data.id);
+      renderPeers();
+      addActivity('leave', `<b>${esc(event.data.id)}</b> left`, event.timestamp);
+      break;
+    case 'message:dm':
+      addActivity('dm', `<b>${esc(event.data.from_id)}</b> \u2192 <b>${esc(event.data.to_id)}</b>: ${esc(event.data.text).slice(0, 80)}`, event.timestamp);
+      break;
+    case 'message:channel':
+      state.channelMessages.unshift(event.data);
+      if (state.channelMessages.length > 300) state.channelMessages.pop();
+      renderMessages();
+      addActivity('channel', `<b>${esc(event.data.from_id)}</b> in ${esc(event.data.channel_id)}: ${esc(event.data.text).slice(0, 60)}`, event.timestamp);
+      break;
+    case 'task:create':
+      state.tasks.push({ ...event.data, claimed_by: null, created_at: event.timestamp, updated_at: event.timestamp });
+      renderTasks();
+      addActivity('task', `New task: <b>${esc(event.data.subject)}</b>`, event.timestamp);
+      break;
+    case 'task:claim':
+      { const t = state.tasks.find(t => t.id === event.data.task_id);
+        if (t) { t.status = 'claimed'; t.claimed_by = event.data.agent_id; } }
+      renderTasks();
+      if (state.openTaskId === event.data.task_id) openTaskPanel(event.data.task_id);
+      addActivity('claim', `<b>${esc(event.data.agent_id)}</b> claimed: ${esc(event.data.subject)}`, event.timestamp);
+      break;
+    case 'task:done':
+      { const t = state.tasks.find(t => t.id === event.data.task_id);
+        if (t) t.status = 'done'; }
+      renderTasks();
+      if (state.openTaskId === event.data.task_id) openTaskPanel(event.data.task_id);
+      addActivity('done', `Completed: <b>${esc(event.data.subject)}</b>`, event.timestamp);
+      break;
+    case 'keepalive': break;
+  }
+}
+
+// --- View switching ---
+function switchView(view) {
+  state.currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`nav-${view}`).classList.add('active');
+  if (view === 'messages') {
+    setTimeout(() => document.getElementById('compose-input').focus(), 50);
+  }
+}
+
+// --- Keyboard shortcuts ---
+document.addEventListener('keydown', (e) => {
+  // Don't trigger shortcuts when typing in inputs
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    if (e.key === 'Escape') {
+      document.activeElement.blur();
+      if (state.openTaskId !== null) closeTaskPanel();
+    }
+    return;
+  }
+  switch (e.key) {
+    case '1': switchView('messages'); break;
+    case '2': switchView('board'); break;
+    case '3': switchView('activity'); break;
+    case 'Escape': closeTaskPanel(); break;
+  }
+});
+
+// --- Compose bar ---
+const composeInput = document.getElementById('compose-input');
+const composeSend = document.getElementById('compose-send');
+const composeTag = document.getElementById('compose-tag');
+
+composeInput.addEventListener('input', () => {
+  composeSend.disabled = !composeInput.value.trim();
+  // Auto-resize
+  composeInput.style.height = 'auto';
+  composeInput.style.height = Math.min(composeInput.scrollHeight, 120) + 'px';
+});
+
+composeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendCompose();
+  }
+});
+
+composeSend.addEventListener('click', sendCompose);
+
+async function sendCompose() {
+  const text = composeInput.value.trim();
+  if (!text) return;
+  const tag = composeTag.value;
+  const fromId = state.dashboardPeerId || 'dashboard';
+  composeSend.disabled = true;
+  try {
+    await fetch(`${BROKER}/channel-broadcast`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel_id: state.selectedChannel, from_id: fromId, tag, text }),
+    });
+    composeInput.value = '';
+    composeInput.style.height = 'auto';
+    composeTag.value = '';
+  } catch {}
+  composeSend.disabled = false;
+  composeInput.focus();
+}
+
+// --- Rendering ---
+function renderAll() { renderChannels(); renderPeers(); renderMessages(); renderTasks(); }
+
+function renderChannels() {
+  const el = document.getElementById('channel-list');
+  document.getElementById('channel-count').textContent = state.channels.length;
+  el.innerHTML = state.channels.map(c => {
+    const name = c.name.replace(/^#/, '');
+    const active = c.id === state.selectedChannel ? ' active' : '';
+    return `<button class="channel-item${active}" onclick="selectChannel('${c.id}')">
+      <span class="channel-hash">#</span> ${esc(name)}
+    </button>`;
+  }).join('');
+}
+
+function selectChannel(id) {
+  state.selectedChannel = id;
+  renderChannels();
+  renderMessages();
+  const ch = state.channels.find(c => c.id === id);
+  document.getElementById('channel-name').textContent = ch ? ch.name.replace(/^#/, '') : id;
+  if (state.currentView !== 'messages') switchView('messages');
+}
+
+function renderPeers() {
+  const el = document.getElementById('peers-list');
+  // Filter out dashboard peer
+  const visible = state.peers.filter(p => p.id !== state.dashboardPeerId);
+  document.getElementById('peer-count').textContent = visible.length;
+  if (visible.length === 0) {
+    el.innerHTML = `<div class="empty-state" style="padding:12px 16px;text-align:left;font-size:11px;">
+      <div style="color:var(--text-tertiary);">No agents online</div>
+      <div style="color:var(--text-tertiary);font-size:10px;margin-top:2px;">Start a Claude Code or Codex session</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = visible.map(p => {
+    const type = p.agent_type || 'unknown';
+    const summary = p.summary || p.cwd?.split('/').pop() || '';
+    return `<div class="peer-item">
+      <div class="peer-dot ${type}"></div>
+      <div class="peer-info">
+        <div class="peer-name">${esc(p.id)}<span class="peer-type">${esc(type)}</span></div>
+        ${summary ? `<div class="peer-desc">${esc(summary)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMessages() {
+  const feed = document.getElementById('messages-feed');
+  const ch = state.channels.find(c => c.id === state.selectedChannel);
+  document.getElementById('channel-name').textContent = ch ? ch.name.replace(/^#/, '') : state.selectedChannel;
+
+  const msgs = state.channelMessages
+    .filter(m => m.channel_id === state.selectedChannel)
+    .sort((a, b) => a.sent_at < b.sent_at ? -1 : 1);
+
+  const msgCount = msgs.length;
+  document.getElementById('channel-meta').textContent = msgCount ? `${msgCount} messages` : '';
+
+  if (msgs.length === 0) {
+    feed.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">#</div>
+      <div class="empty-state-title">No messages yet</div>
+      <div style="margin-top:4px;">Be the first to broadcast, or wait for agents to start talking</div>
+      <div class="empty-state-hint">curl -X POST localhost:7899/channel-broadcast ...</div>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  for (const m of msgs) {
+    const d = new Date(m.sent_at);
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    if (dateStr !== lastDate) {
+      html += `<div class="date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+    const tagHtml = m.tag ? `<span class="msg-tag tag-${esc(m.tag)}">${esc(m.tag)}</span>` : '';
+    const color = peerColor(m.from_id);
+    const initials = m.from_id.slice(0, 2).toUpperCase();
+    html += `<div class="msg">
+      <div class="msg-avatar" style="background:${color}">${initials}</div>
+      <div class="msg-body">
+        <div class="msg-header">
+          <span class="msg-from">${esc(m.from_id)}</span>
+          ${tagHtml}
+          <span class="msg-time" data-ts="${m.sent_at}">${timeAgo(m.sent_at)}</span>
+        </div>
+        <div class="msg-text">${esc(m.text)}</div>
+      </div>
+    </div>`;
+  }
+  feed.innerHTML = html;
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function renderTasks() {
+  const open = state.tasks.filter(t => t.status === 'open');
+  const claimed = state.tasks.filter(t => t.status === 'claimed');
+  const done = state.tasks.filter(t => t.status === 'done');
+
+  document.getElementById('task-total').textContent = `${state.tasks.length} issues`;
+  document.getElementById('count-open').textContent = open.length;
+  document.getElementById('count-claimed').textContent = claimed.length;
+  document.getElementById('count-done').textContent = done.length;
+
+  const renderCol = (tasks, actions) => {
+    if (tasks.length === 0) {
+      const hints = {
+        claim: 'No tasks waiting',
+        done: 'No tasks in progress',
+        '': 'No completed tasks',
+      };
+      return `<div class="empty-state" style="padding:30px 16px;"><div class="empty-state-icon" style="font-size:24px;">&middot;</div>${hints[actions] || 'No issues'}</div>`;
+    }
+    return tasks.map(t => {
+      const assignee = t.claimed_by
+        ? `<span class="task-assignee"><span class="assign-dot" style="background:${peerColor(t.claimed_by)}"></span>${esc(t.claimed_by)}</span>`
+        : '';
+      return `<div class="task" onclick="openTaskPanel(${t.id})">
+        <div class="task-id">EOG-${t.id}</div>
+        <div class="task-title">${esc(t.subject)}</div>
+        <div class="task-footer">
+          ${assignee}
+          <span class="task-time" data-ts="${t.updated_at}">${timeAgo(t.updated_at)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  document.getElementById('tasks-open').innerHTML = renderCol(open, 'claim');
+  document.getElementById('tasks-claimed').innerHTML = renderCol(claimed, 'done');
+  document.getElementById('tasks-done').innerHTML = renderCol(done, '');
+}
+
+// --- Task Detail Panel ---
+function openTaskPanel(taskId) {
+  const t = state.tasks.find(t => t.id === taskId);
+  if (!t) return;
+  state.openTaskId = taskId;
+
+  document.getElementById('panel-task-id').textContent = `EOG-${t.id}`;
+  document.getElementById('panel-task-title').textContent = t.subject;
+  document.getElementById('panel-task-desc').value = t.description || '';
+  document.getElementById('panel-task-channel').textContent = t.channel_id;
+
+  const created = t.created_at ? new Date(t.created_at).toLocaleString() : '';
+  document.getElementById('panel-task-created').textContent = created;
+
+  const statusEl = document.getElementById('panel-task-status');
+  statusEl.className = `task-panel-status ${t.status}`;
+  const statusLabels = { open: 'Todo', claimed: 'In Progress', done: 'Done' };
+  statusEl.textContent = statusLabels[t.status] || t.status;
+
+  const assigneeSection = document.getElementById('panel-assignee-section');
+  if (t.claimed_by) {
+    assigneeSection.style.display = '';
+    document.getElementById('panel-task-assignee').textContent = t.claimed_by;
+  } else {
+    assigneeSection.style.display = 'none';
+  }
+
+  // Actions
+  const actionsEl = document.getElementById('panel-actions');
+  let actions = `<button class="panel-btn panel-btn-primary" onclick="saveTaskDesc(${t.id})">Save Description</button>`;
+  if (t.status === 'open') {
+    actions += `<button class="panel-btn panel-btn-secondary" onclick="panelClaimTask(${t.id})">Start Task</button>`;
+  }
+  if (t.status === 'claimed') {
+    actions += `<button class="panel-btn panel-btn-secondary" onclick="panelDoneTask(${t.id})">Mark Done</button>`;
+  }
+  actions += `<span style="flex:1"></span>`;
+  actions += `<button class="panel-btn panel-btn-danger" onclick="closeTaskPanel()">Close</button>`;
+  actionsEl.innerHTML = actions;
+
+  document.getElementById('task-overlay').classList.add('open');
+  document.getElementById('task-panel').classList.add('open');
+}
+
+function closeTaskPanel() {
+  state.openTaskId = null;
+  document.getElementById('task-overlay').classList.remove('open');
+  document.getElementById('task-panel').classList.remove('open');
+}
+
+async function saveTaskDesc(taskId) {
+  const desc = document.getElementById('panel-task-desc').value;
+  await fetch(`${BROKER}/update-task`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task_id: taskId, description: desc }),
+  });
+  const t = state.tasks.find(t => t.id === taskId);
+  if (t) t.description = desc;
+}
+
+async function panelClaimTask(taskId) {
+  const agentId = state.dashboardPeerId || prompt('Agent ID:');
+  if (!agentId) return;
+  await fetch(`${BROKER}/claim-task`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task_id: taskId, agent_id: agentId }),
+  });
+}
+
+async function panelDoneTask(taskId) {
+  await fetch(`${BROKER}/update-task`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task_id: taskId, status: 'done' }),
+  });
+}
+
+// Keep legacy functions for backward compat
+async function claimTask(taskId) { openTaskPanel(taskId); }
+async function doneTask(taskId) { panelDoneTask(taskId); }
+
+// --- Activity ---
+function addActivity(type, html, timestamp) {
+  const icons = { join: '\u2192', leave: '\u2190', dm: '\u2709', channel: '#', task: '+', claim: '\u25cf', done: '\u2713' };
+  state.events.unshift({ icon: icons[type] || '\u00b7', html, time: timestamp, type });
+  if (state.events.length > 200) state.events.pop();
+  renderActivity();
+}
+
+function renderActivity() {
+  const el = document.getElementById('activity-feed');
+  if (state.events.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">&compfn;</div>
+      <div class="empty-state-title">Waiting for events</div>
+      <div style="margin-top:4px;">Agent activity will appear here in real-time</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = state.events.map(e => {
+    const colors = { join: 'var(--green)', leave: 'var(--red)', dm: 'var(--cyan)', channel: 'var(--text-tertiary)', task: 'var(--blue)', claim: 'var(--yellow)', done: 'var(--green)' };
+    return `<div class="activity-item">
+      <span class="activity-icon" style="color:${colors[e.type] || 'var(--text-tertiary)'}">${e.icon}</span>
+      <span class="activity-time" data-ts="${e.time}">${timeAgo(e.time)}</span>
+      <span class="activity-text">${e.html}</span>
+    </div>`;
+  }).join('');
+}
+
+// --- Helpers ---
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+// --- Boot ---
+connectSSE();
+</script>
+</body>
+</html>

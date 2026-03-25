@@ -93,17 +93,17 @@ assert_contains "broker is healthy" "$HEALTH" '"status":"ok"'
 echo ""
 echo -e "${BOLD}2. Peer Registration${NC}"
 
-REG_A=$(api "/register" "{\"pid\":$PID_A,\"cwd\":\"/tmp/project-a\",\"git_root\":null,\"tty\":\"test-a\",\"summary\":\"Peer A — fixing auth\"}")
+REG_A=$(api "/register" "{\"pid\":$PID_A,\"cwd\":\"/tmp/project-a\",\"git_root\":null,\"tty\":\"test-a\",\"summary\":\"Peer A — fixing auth\",\"agent_type\":\"claude-code\"}")
 PEER_A=$(echo "$REG_A" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 assert_contains "peer A registered" "$REG_A" '"id"'
 assert_contains "peer A auto-joined #general" "$REG_A" '"general"'
 
-REG_B=$(api "/register" "{\"pid\":$PID_B,\"cwd\":\"/tmp/project-b\",\"git_root\":\"/tmp/project-b\",\"tty\":\"test-b\",\"summary\":\"Peer B — writing tests\"}")
+REG_B=$(api "/register" "{\"pid\":$PID_B,\"cwd\":\"/tmp/project-b\",\"git_root\":\"/tmp/project-b\",\"tty\":\"test-b\",\"summary\":\"Peer B — writing tests\",\"agent_type\":\"codex\"}")
 PEER_B=$(echo "$REG_B" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 assert_contains "peer B registered" "$REG_B" '"id"'
 assert_contains "peer B auto-joined #general" "$REG_B" '"general"'
 
-echo -e "       ${DIM}Peer A: $PEER_A | Peer B: $PEER_B${NC}"
+echo -e "       ${DIM}Peer A: $PEER_A (claude-code) | Peer B: $PEER_B (codex)${NC}"
 
 # ── List Peers ──
 echo ""
@@ -245,9 +245,53 @@ echo -e "${BOLD}9. Heartbeat${NC}"
 HB=$(api "/heartbeat" "{\"id\":\"$PEER_A\"}")
 assert_contains "heartbeat accepted" "$HB" '"ok":true'
 
+# ── Cross-Agent Identity ──
+echo ""
+echo -e "${BOLD}10. Cross-Agent Identity${NC}"
+
+# Verify agent_type shows up in peer listings
+PEERS_TYPED=$(api "/list-peers" '{"scope":"machine","cwd":".","git_root":null}')
+assert_contains "peer A has agent_type claude-code" "$PEERS_TYPED" '"agent_type":"claude-code"'
+assert_contains "peer B has agent_type codex" "$PEERS_TYPED" '"agent_type":"codex"'
+
+# Register a peer without agent_type — should default to "unknown"
+sleep 3600 &
+PID_D=$!
+REG_D=$(api "/register" "{\"pid\":$PID_D,\"cwd\":\"/tmp/project-d\",\"git_root\":null,\"tty\":null,\"summary\":\"Peer D — no type\"}")
+PEER_D=$(echo "$REG_D" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+PEERS_D=$(api "/list-peers" '{"scope":"machine","cwd":".","git_root":null}')
+assert_contains "default agent_type is unknown" "$PEERS_D" '"agent_type":"unknown"'
+
+# Cross-agent messaging: codex → claude-code
+XMSG=$(api "/send-message" "{\"from_id\":\"$PEER_B\",\"to_id\":\"$PEER_A\",\"text\":\"Cross-agent msg from codex to claude-code\"}")
+assert_contains "cross-agent send works" "$XMSG" '"ok":true'
+
+XPOLL=$(api "/poll-messages" "{\"id\":\"$PEER_A\"}")
+assert_contains "cross-agent receive works" "$XPOLL" "Cross-agent msg from codex"
+
+# Cross-agent task: codex creates, claude-code claims
+XCH=$(api "/create-channel" '{"name":"cross-agent-test"}')
+XCH_ID=$(echo "$XCH" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+api "/join-channel" "{\"channel_id\":\"$XCH_ID\",\"agent_id\":\"$PEER_A\"}" > /dev/null
+api "/join-channel" "{\"channel_id\":\"$XCH_ID\",\"agent_id\":\"$PEER_B\"}" > /dev/null
+
+XT=$(api "/create-task" "{\"channel_id\":\"$XCH_ID\",\"subject\":\"Cross-agent task from codex\"}")
+XT_ID=$(echo "$XT" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+XCLAIM=$(api "/claim-task" "{\"task_id\":$XT_ID,\"agent_id\":\"$PEER_A\"}")
+assert_contains "claude-code claims codex task" "$XCLAIM" '"ok":true'
+
+XDONE=$(api "/update-task" "{\"task_id\":$XT_ID,\"status\":\"done\",\"description\":\"Completed by claude-code\"}")
+assert_contains "claude-code completes codex task" "$XDONE" '"ok":true'
+
+# Cleanup extra peer
+api "/unregister" "{\"id\":\"$PEER_D\"}" > /dev/null
+kill $PID_D 2>/dev/null
+wait $PID_D 2>/dev/null
+
 # ── Cleanup ──
 echo ""
-echo -e "${BOLD}10. Cleanup${NC}"
+echo -e "${BOLD}11. Cleanup${NC}"
 
 api "/unregister" "{\"id\":\"$PEER_A\"}" > /dev/null
 api "/unregister" "{\"id\":\"$PEER_B\"}" > /dev/null

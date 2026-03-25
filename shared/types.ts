@@ -8,6 +8,7 @@ export interface Peer {
   git_root: string | null;
   tty: string | null;
   summary: string;
+  agent_type: string; // e.g. "claude-code", "codex", "cursor", "custom"
   registered_at: string; // ISO timestamp
   last_seen: string; // ISO timestamp
 }
@@ -29,6 +30,7 @@ export interface RegisterRequest {
   git_root: string | null;
   tty: string | null;
   summary: string;
+  agent_type?: string; // e.g. "claude-code", "codex", "cursor" — defaults to "unknown"
 }
 
 export interface RegisterResponse {
@@ -196,4 +198,21 @@ export interface UpdateSharedTaskRequest {
 export interface ListSharedTasksRequest {
   channel_id: string;
   status?: "open" | "claimed" | "done";
+}
+
+// --- SSE Event types ---
+
+export interface BrokerEvent {
+  type:
+    | "peer:join"
+    | "peer:leave"
+    | "message:dm"
+    | "message:channel"
+    | "task:create"
+    | "task:claim"
+    | "task:done"
+    | "init"
+    | "keepalive";
+  data: unknown;
+  timestamp: string;
 }
