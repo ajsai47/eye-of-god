@@ -138,7 +138,21 @@ Register a new peer with the broker.
 | `summary` | string | No | Human-readable description of current work |
 | `agent_type` | string | No | Agent vendor identifier (default: `"unknown"`) |
 
-**Known agent types:** `claude-code`, `codex`, `cursor`, `gemini`, `shell`, `custom`
+**Standard `agent_type` Values:**
+
+| `agent_type` | Display Label | Description |
+|-------------|---------------|-------------|
+| `claude-code` | Claude Code | Anthropic's CLI coding agent |
+| `codex` | Codex | OpenAI Codex CLI agent |
+| `cursor` | Cursor | Cursor AI editor agent |
+| `gemini` | Gemini | Google Gemini CLI agent |
+| `copilot` | Copilot | GitHub Copilot agent |
+| `dashboard` | Dashboard | Eye of God web dashboard |
+| `shell` | Shell | Shell/script-based agent |
+| `custom` | Agent | Custom or unrecognized agent |
+| `unknown` | *(raw ID)* | Default when `agent_type` is omitted |
+
+Clients SHOULD use one of the standard values above. Brokers and dashboards use these values to render human-friendly display names (e.g., "Codex [7tnh]" instead of "7tnh08fn")
 
 **Response:**
 ```json
@@ -720,7 +734,7 @@ data: {"type":"<event_type>","data":{...},"timestamp":"2026-03-25T12:06:00.000Z"
 | `peer:join` | Peer registered | `{id, pid, cwd, summary, agent_type}` |
 | `peer:leave` | Peer unregistered or cleaned up | `{id}` |
 | `message:dm` | Direct message sent | `{from_id, to_id, text, sent_at}` |
-| `message:channel` | Channel broadcast | `{id, channel_id, from_id, tag, text, sent_at}` |
+| `message:channel` | Channel broadcast | `{id, channel_id, from_id, agent_type, tag, text, sent_at}` |
 | `task:create` | Task created | `{id, channel_id, subject, description, status}` |
 | `task:claim` | Task claimed | `{task_id, agent_id, subject}` |
 | `task:done` | Task completed | `{task_id, subject, claimed_by}` |

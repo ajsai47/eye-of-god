@@ -479,18 +479,21 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
           };
         }
 
+        const LABELS: Record<string, string> = {
+          'claude-code': 'Claude Code', 'codex': 'Codex', 'cursor': 'Cursor',
+          'gemini': 'Gemini', 'copilot': 'Copilot', 'dashboard': 'Dashboard',
+          'shell': 'Shell', 'custom': 'Agent',
+        };
         const lines = peers.map((p) => {
-          const parts = [
-            `ID: ${p.id}`,
-            `Type: ${p.agent_type ?? "unknown"}`,
-            `PID: ${p.pid}`,
-            `CWD: ${p.cwd}`,
-          ];
-          if (p.git_root) parts.push(`Repo: ${p.git_root}`);
-          if (p.tty) parts.push(`TTY: ${p.tty}`);
-          if (p.summary) parts.push(`Summary: ${p.summary}`);
-          parts.push(`Last seen: ${p.last_seen}`);
-          return parts.join("\n  ");
+          const type = p.agent_type ?? "unknown";
+          const label = LABELS[type] || type;
+          const parts = [`${label} [${p.id}]`];
+          parts.push(`  PID: ${p.pid}  CWD: ${p.cwd}`);
+          if (p.git_root) parts.push(`  Repo: ${p.git_root}`);
+          if (p.tty) parts.push(`  TTY: ${p.tty}`);
+          if (p.summary) parts.push(`  Summary: ${p.summary}`);
+          parts.push(`  Last seen: ${p.last_seen}`);
+          return parts.join("\n");
         });
 
         return {

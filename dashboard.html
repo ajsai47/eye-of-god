@@ -141,6 +141,7 @@
   .peer-name { color: var(--text); font-weight: 500; font-size: 12px; }
   .peer-name .peer-type { color: var(--text-tertiary); font-weight: 400; font-size: 11px; margin-left: 4px; }
   .peer-desc { color: var(--text-tertiary); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .peer-short-id { color: var(--text-tertiary); font-weight: 400; font-size: 11px; font-family: var(--mono); }
 
   /* -- Main content -- */
   .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
@@ -639,9 +640,72 @@ const state = {
   dashboardPeerId: null,
 };
 
-// Avatar colors by peer ID (deterministic)
+// --- Friendly display names ---
+const AGENT_LABELS = {
+  'claude-code': 'Claude Code',
+  'codex': 'Codex',
+  'cursor': 'Cursor',
+  'gemini': 'Gemini',
+  'copilot': 'Copilot',
+  'dashboard': 'Dashboard',
+  'shell': 'Shell',
+  'custom': 'Agent',
+};
+
+// Cache agent_type for peers that have left (so departed senders still resolve)
+const peerCache = new Map(); // id → { agent_type }
+
+function cachePeer(id, agent_type) {
+  if (id && agent_type) peerCache.set(id, { agent_type });
+}
+
+function lookupType(id) {
+  const peer = state.peers.find(p => p.id === id);
+  if (peer) { cachePeer(id, peer.agent_type); return peer.agent_type; }
+  return peerCache.get(id)?.agent_type || null;
+}
+
+function displayName(id) {
+  const type = lookupType(id);
+  return AGENT_LABELS[type] || type || id.slice(0, 8);
+}
+
+function displayBadge(id) {
+  const type = lookupType(id);
+  const label = AGENT_LABELS[type] || type || null;
+  const short = id.slice(0, 4);
+  return label ? `${esc(label)} <span class="peer-short-id">[${esc(short)}]</span>` : esc(id);
+}
+
+function displayInitials(id) {
+  const type = lookupType(id);
+  const label = AGENT_LABELS[type];
+  if (label) {
+    // First letter of each word: "Claude Code" → "CC", "Codex" → "CX"
+    const words = label.split(' ');
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return label.slice(0, 2).toUpperCase();
+  }
+  return id.slice(0, 2).toUpperCase();
+}
+
+// Avatar colors by agent_type (all instances of same type get same color)
+const TYPE_COLORS = {
+  'claude-code': '#818cf8',
+  'codex': '#4ade80',
+  'cursor': '#facc15',
+  'gemini': '#22d3ee',
+  'copilot': '#fb923c',
+  'dashboard': '#a1a1aa',
+  'shell': '#c084fc',
+};
 const COLORS = ['#818cf8','#4ade80','#f87171','#facc15','#22d3ee','#c084fc','#fb923c','#e879f9'];
-function peerColor(id) { let h = 0; for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h); return COLORS[Math.abs(h) % COLORS.length]; }
+function peerColor(id) {
+  const type = lookupType(id);
+  if (type && TYPE_COLORS[type]) return TYPE_COLORS[type];
+  let h = 0; for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
+  return COLORS[Math.abs(h) % COLORS.length];
+}
 
 // --- Relative time ---
 function timeAgo(iso) {
@@ -705,6 +769,9 @@ function handleEvent(event) {
       state.channels = event.data.channels || [];
       state.tasks = event.data.tasks || [];
       state.channelMessages = event.data.channelMessages || [];
+      // Populate peer cache from init data
+      for (const p of state.peers) cachePeer(p.id, p.agent_type);
+      for (const m of state.channelMessages) { if (m.agent_type) cachePeer(m.from_id, m.agent_type); }
       if (!state.channels.find(c => c.id === state.selectedChannel) && state.channels.length > 0) {
         state.selectedChannel = state.channels[0].id;
       }
@@ -712,22 +779,24 @@ function handleEvent(event) {
       break;
     case 'peer:join':
       if (!state.peers.find(p => p.id === event.data.id)) state.peers.push(event.data);
+      cachePeer(event.data.id, event.data.agent_type);
       renderPeers();
-      addActivity('join', `<b>${esc(event.data.id)}</b> joined (${esc(event.data.agent_type)})`, event.timestamp);
+      addActivity('join', `<b>${displayBadge(event.data.id)}</b> joined`, event.timestamp);
       break;
     case 'peer:leave':
       state.peers = state.peers.filter(p => p.id !== event.data.id);
       renderPeers();
-      addActivity('leave', `<b>${esc(event.data.id)}</b> left`, event.timestamp);
+      addActivity('leave', `<b>${displayBadge(event.data.id)}</b> left`, event.timestamp);
       break;
     case 'message:dm':
-      addActivity('dm', `<b>${esc(event.data.from_id)}</b> \u2192 <b>${esc(event.data.to_id)}</b>: ${esc(event.data.text).slice(0, 80)}`, event.timestamp);
+      addActivity('dm', `<b>${displayBadge(event.data.from_id)}</b> \u2192 <b>${displayBadge(event.data.to_id)}</b>: ${esc(event.data.text).slice(0, 80)}`, event.timestamp);
       break;
     case 'message:channel':
+      if (event.data.agent_type) cachePeer(event.data.from_id, event.data.agent_type);
       state.channelMessages.unshift(event.data);
       if (state.channelMessages.length > 300) state.channelMessages.pop();
       renderMessages();
-      addActivity('channel', `<b>${esc(event.data.from_id)}</b> in ${esc(event.data.channel_id)}: ${esc(event.data.text).slice(0, 60)}`, event.timestamp);
+      addActivity('channel', `<b>${displayBadge(event.data.from_id)}</b> in ${esc(event.data.channel_id)}: ${esc(event.data.text).slice(0, 60)}`, event.timestamp);
       break;
     case 'task:create':
       state.tasks.push({ ...event.data, claimed_by: null, created_at: event.timestamp, updated_at: event.timestamp });
@@ -739,7 +808,7 @@ function handleEvent(event) {
         if (t) { t.status = 'claimed'; t.claimed_by = event.data.agent_id; } }
       renderTasks();
       if (state.openTaskId === event.data.task_id) openTaskPanel(event.data.task_id);
-      addActivity('claim', `<b>${esc(event.data.agent_id)}</b> claimed: ${esc(event.data.subject)}`, event.timestamp);
+      addActivity('claim', `<b>${displayBadge(event.data.agent_id)}</b> claimed: ${esc(event.data.subject)}`, event.timestamp);
       break;
     case 'task:done':
       { const t = state.tasks.find(t => t.id === event.data.task_id);
@@ -860,12 +929,15 @@ function renderPeers() {
     return;
   }
   el.innerHTML = visible.map(p => {
+    cachePeer(p.id, p.agent_type);
     const type = p.agent_type || 'unknown';
+    const label = AGENT_LABELS[type] || type;
+    const short = p.id.slice(0, 4);
     const summary = p.summary || p.cwd?.split('/').pop() || '';
     return `<div class="peer-item">
       <div class="peer-dot ${type}"></div>
       <div class="peer-info">
-        <div class="peer-name">${esc(p.id)}<span class="peer-type">${esc(type)}</span></div>
+        <div class="peer-name">${esc(label)} <span class="peer-short-id">[${esc(short)}]</span></div>
         ${summary ? `<div class="peer-desc">${esc(summary)}</div>` : ''}
       </div>
     </div>`;
@@ -903,14 +975,16 @@ function renderMessages() {
       html += `<div class="date-divider">${dateStr}</div>`;
       lastDate = dateStr;
     }
+    // Cache agent_type from SSE if available
+    if (m.agent_type) cachePeer(m.from_id, m.agent_type);
     const tagHtml = m.tag ? `<span class="msg-tag tag-${esc(m.tag)}">${esc(m.tag)}</span>` : '';
     const color = peerColor(m.from_id);
-    const initials = m.from_id.slice(0, 2).toUpperCase();
+    const initials = displayInitials(m.from_id);
     html += `<div class="msg">
       <div class="msg-avatar" style="background:${color}">${initials}</div>
       <div class="msg-body">
         <div class="msg-header">
-          <span class="msg-from">${esc(m.from_id)}</span>
+          <span class="msg-from">${displayBadge(m.from_id)}</span>
           ${tagHtml}
           <span class="msg-time" data-ts="${m.sent_at}">${timeAgo(m.sent_at)}</span>
         </div>
@@ -923,11 +997,13 @@ function renderMessages() {
 }
 
 function renderTasks() {
-  const open = state.tasks.filter(t => t.status === 'open');
-  const claimed = state.tasks.filter(t => t.status === 'claimed');
-  const done = state.tasks.filter(t => t.status === 'done');
+  const ch = state.selectedChannel;
+  const filtered = ch ? state.tasks.filter(t => t.channel_id === ch) : state.tasks;
+  const open = filtered.filter(t => t.status === 'open');
+  const claimed = filtered.filter(t => t.status === 'claimed');
+  const done = filtered.filter(t => t.status === 'done');
 
-  document.getElementById('task-total').textContent = `${state.tasks.length} issues`;
+  document.getElementById('task-total').textContent = `${filtered.length} issues`;
   document.getElementById('count-open').textContent = open.length;
   document.getElementById('count-claimed').textContent = claimed.length;
   document.getElementById('count-done').textContent = done.length;
@@ -943,7 +1019,7 @@ function renderTasks() {
     }
     return tasks.map(t => {
       const assignee = t.claimed_by
-        ? `<span class="task-assignee"><span class="assign-dot" style="background:${peerColor(t.claimed_by)}"></span>${esc(t.claimed_by)}</span>`
+        ? `<span class="task-assignee"><span class="assign-dot" style="background:${peerColor(t.claimed_by)}"></span>${displayBadge(t.claimed_by)}</span>`
         : '';
       return `<div class="task" onclick="openTaskPanel(${t.id})">
         <div class="task-id">EOG-${t.id}</div>
@@ -983,7 +1059,7 @@ function openTaskPanel(taskId) {
   const assigneeSection = document.getElementById('panel-assignee-section');
   if (t.claimed_by) {
     assigneeSection.style.display = '';
-    document.getElementById('panel-task-assignee').textContent = t.claimed_by;
+    document.getElementById('panel-task-assignee').innerHTML = displayBadge(t.claimed_by);
   } else {
     assigneeSection.style.display = 'none';
   }

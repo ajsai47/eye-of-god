@@ -4,7 +4,7 @@
   "description": "Peer discovery and messaging for Claude Code instances",
   "module": "index.ts",
   "type": "module",
-  "private": true,
+  "license": "MIT",
   "scripts": {
     "broker": "bun broker.ts",
     "server": "bun server.ts",

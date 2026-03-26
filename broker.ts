@@ -129,9 +129,13 @@ db.run(`
     tag TEXT DEFAULT '',
     text TEXT NOT NULL,
     sent_at TEXT NOT NULL,
+    agent_type TEXT DEFAULT '',
     FOREIGN KEY (channel_id) REFERENCES channels(id)
   )
 `);
+
+// Migration: add agent_type column if missing (existing DBs)
+try { db.run("ALTER TABLE channel_messages ADD COLUMN agent_type TEXT DEFAULT ''"); } catch { /* already exists */ }
 
 db.run(`
   CREATE TABLE IF NOT EXISTS shared_tasks (
@@ -298,8 +302,8 @@ const deleteChannelMember = db.prepare(`
 `);
 
 const insertChannelMessage = db.prepare(`
-  INSERT INTO channel_messages (channel_id, from_id, tag, text, sent_at)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO channel_messages (channel_id, from_id, tag, text, sent_at, agent_type)
+  VALUES (?, ?, ?, ?, ?, ?)
 `);
 
 const selectChannelMessagesSince = db.prepare(`
@@ -491,9 +495,12 @@ function handleChannelBroadcast(body: ChannelBroadcastRequest): { ok: boolean; i
   const channel = db.query("SELECT id FROM channels WHERE id = ?").get(body.channel_id);
   if (!channel) return { ok: false, error: `Channel ${body.channel_id} not found` };
   const now = new Date().toISOString();
-  const result = insertChannelMessage.run(body.channel_id, body.from_id, body.tag ?? "", body.text, now);
+  // Look up sender's agent_type so we can persist it with the message
+  const sender = db.query("SELECT agent_type FROM peers WHERE id = ?").get(body.from_id) as { agent_type: string } | null;
+  const agentType = sender?.agent_type ?? "";
+  const result = insertChannelMessage.run(body.channel_id, body.from_id, body.tag ?? "", body.text, now, agentType);
   const msgId = Number(result.lastInsertRowid);
-  emitEvent("message:channel", { id: msgId, channel_id: body.channel_id, from_id: body.from_id, tag: body.tag ?? "", text: body.text, sent_at: now });
+  emitEvent("message:channel", { id: msgId, channel_id: body.channel_id, from_id: body.from_id, agent_type: agentType || null, tag: body.tag ?? "", text: body.text, sent_at: now });
   return { ok: true, id: msgId };
 }
 
@@ -695,6 +702,15 @@ Bun.serve({
           return corsJson(handleListSharedTasks(body as ListSharedTasksRequest), 200, req);
         case "/list-channels":
           return corsJson(db.query("SELECT * FROM channels ORDER BY created_at DESC").all(), 200, req);
+        case "/delete-channel": {
+          const chId = body.channel_id;
+          if (!chId) return corsJson({ error: "channel_id required" }, 400, req);
+          db.run("DELETE FROM channel_messages WHERE channel_id = ?", [chId]);
+          db.run("DELETE FROM channel_members WHERE channel_id = ?", [chId]);
+          db.run("DELETE FROM shared_tasks WHERE channel_id = ?", [chId]);
+          db.run("DELETE FROM channels WHERE id = ?", [chId]);
+          return corsJson({ ok: true }, 200, req);
+        }
 
         default:
           return corsJson({ error: "not found" }, 404, req);
